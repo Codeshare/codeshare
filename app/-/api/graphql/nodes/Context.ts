@@ -1,9 +1,10 @@
-import { IsBoolean, IsDefined, IsOptional, IsString } from 'class-validator'
-import { Field, ObjectType } from 'type-graphql'
-import Node from './Node'
-import Me from './Me'
+import { IsBoolean, IsDefined, IsOptional, IsString } from "class-validator"
+import { Field, ObjectType } from "type-graphql"
 
-@ObjectType({ description: 'The user model', implements: Node })
+import Me from "./Me"
+import Node from "./Node"
+
+@ObjectType({ description: "The user model", implements: Node })
 export default class Context extends Node {
   @Field()
   @IsDefined()

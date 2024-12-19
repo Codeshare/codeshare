@@ -1,50 +1,50 @@
-import logger from '@codeshare/log'
-import { ignoreStatus } from 'ignore-errors'
-import { subscriptionPlansModel } from '~/models/subscriptionPlans'
-import 'reflect-metadata'
+import logger from "@codeshare/log"
+import { subscriptionPlansModel } from "~/models/subscriptionPlans"
+import { ignoreStatus } from "ignore-errors"
 
-import AppError from '~/helpers/AppError'
+import "reflect-metadata"
+
+import { redisClient } from "@/app/-/api/graphql/clients/redisClient"
+import idUtils from "@codeshare/id-utils"
+import AppError from "~/helpers/AppError"
+import { codeshareUsersModel } from "~/models/redisCodeshareUsers"
+import { memoErr, valueDesc } from "~/utils/memoError"
+import { rateLimit } from "~/utils/rateLimit"
+import { withFilter } from "apollo-server"
+import { GraphQLResolveInfo } from "graphql"
+import RedisPubSubEngine from "graphql-ioredis-subscriptions"
+import parseFields from "graphql-parse-fields"
+import r from "rethinkdb"
 import {
+  Arg,
+  Args,
+  Ctx,
+  Field,
+  FieldResolver,
+  ID,
+  Info,
+  InputType,
+  Mutation,
+  ObjectType,
+  Publisher,
+  PubSub,
+  Query,
+  Resolver,
+  ResolverFilterData,
+  Root,
+  Subscription,
+  UseMiddleware,
+} from "type-graphql"
+
+import {
+  Row as CodeshareRow,
   codesharesModel,
   Fields,
-  Row as CodeshareRow,
-} from './../models/codeshares'
-import { ResolverContextType } from './getContext'
-import parseFields from 'graphql-parse-fields'
-import r from 'rethinkdb'
-
-import {
-  Resolver,
-  Ctx,
-  Arg,
-  ObjectType,
-  Field,
-  Mutation,
-  InputType,
-  Info,
-  Query,
-  FieldResolver,
-  Root,
-  Args,
-  ResolverFilterData,
-  Subscription,
-  PubSub,
-  Publisher,
-  ID,
-  UseMiddleware,
-} from 'type-graphql'
-
-import Codeshare, { CanEdit, CodeCheckpointInput } from './nodes/Codeshare'
-import idUtils from '@codeshare/id-utils'
-import Me, { CodeshareEdge } from './nodes/Me'
-import { GraphQLResolveInfo } from 'graphql'
-import { rateLimit } from '~/utils/rateLimit'
-import { withFilter } from 'apollo-server'
-import { redisClient } from '../clients/redisClient'
-import RedisPubSubEngine from 'graphql-ioredis-subscriptions'
-import { codeshareUsersModel } from '~/models/redisCodeshareUsers'
-import { notifyDeleteCodeshareUser } from './CodeshareUserResolver'
-import { memoErr, valueDesc } from '~/utils/memoError'
+} from "./../models/codeshares"
+import { notifyDeleteCodeshareUser } from "./CodeshareUserResolver"
+import { ResolverContextType } from "./getContext"
+import Codeshare, { CanEdit, CodeCheckpointInput } from "./nodes/Codeshare"
+import Me, { CodeshareEdge } from "./nodes/Me"
 
 // if you change this change ErrorPage.jsx in web and wherever else it's used
 const ANON_CODESHARE_LIMIT = 10
@@ -121,7 +121,7 @@ export class DeleteCodeshareResponseType {
   me!: Me
 }
 
-type CodeshareJSON = Omit<CodeshareRow, 'createdAt' | 'modifiedAt'> & {
+type CodeshareJSON = Omit<CodeshareRow, "createdAt" | "modifiedAt"> & {
   createdAt: string
   modifiedAt: string
 }
@@ -163,9 +163,9 @@ class CodeshareCreationsPayload {
 }
 
 enum topics {
-  CREATED_CODESHARE = 'CREATED_CODESHARE',
-  UPDATED_CODESHARE = 'UPDATED_CODESHARE',
-  DELETED_CODESHARE = 'DELETED_CODESHARE',
+  CREATED_CODESHARE = "CREATED_CODESHARE",
+  UPDATED_CODESHARE = "UPDATED_CODESHARE",
+  DELETED_CODESHARE = "DELETED_CODESHARE",
 }
 
 @Resolver(() => Codeshare)
@@ -176,7 +176,7 @@ export default class CodeshareResolver {
 
   @FieldResolver(() => ID)
   id(@Root() root: Codeshare) {
-    return idUtils.encodeRelayId('Codeshare', root.id)
+    return idUtils.encodeRelayId("Codeshare", root.id)
   }
 
   @FieldResolver(() => CanEdit)
@@ -198,18 +198,18 @@ export default class CodeshareResolver {
    */
 
   @Query(() => Codeshare)
-  @UseMiddleware(rateLimit('codeshare', 60))
+  @UseMiddleware(rateLimit("codeshare", 60))
   async codeshare(
-    @Arg('id') id: string,
+    @Arg("id") id: string,
     @Ctx() ctx: ResolverContextType,
     @Info() info: GraphQLResolveInfo,
   ) {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
-    const codeshareId = idUtils.decodeRelayId('Codeshare', id)
+    if (!ctx.me) throw new AppError("not authenticated", { status: 401 })
+    const codeshareId = idUtils.decodeRelayId("Codeshare", id)
     const fields = parseFields<FieldsRow>(info)
     let codeshare = await codesharesModel
       .updateOne(
-        'id',
+        "id",
         codeshareId,
         {
           accessedAt: new Date(),
@@ -249,15 +249,15 @@ export default class CodeshareResolver {
    */
 
   @Mutation(() => CreateCodeshareResponse)
-  @UseMiddleware(rateLimit('createCodeshare', 30))
+  @UseMiddleware(rateLimit("createCodeshare", 30))
   async createCodeshare(
-    @Arg('input')
+    @Arg("input")
     { id, title }: CreateCodeshareInput,
     @Ctx() ctx: ResolverContextType,
     @Info() info: GraphQLResolveInfo,
   ) {
-    logger.debug('createCodeshare', { id, title, ctx })
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
+    logger.debug("createCodeshare", { id, title, ctx })
+    if (!ctx.me) throw new AppError("not authenticated", { status: 401 })
     const fields = parseFields<{ newCodeshareEdge?: { node?: FieldsRow } }>(
       info,
     )
@@ -265,18 +265,18 @@ export default class CodeshareResolver {
       fields?.newCodeshareEdge?.node &&
       (Object.keys(fields?.newCodeshareEdge?.node) as Fields | undefined)
     const idData =
-      id == null ? {} : { id: idUtils.decodeRelayId('Codeshare', id) }
+      id == null ? {} : { id: idUtils.decodeRelayId("Codeshare", id) }
     const titleData = title == null ? {} : { title }
     const meDefaultCodeshareSettingsData = ctx.me.defaultCodeshareSettings ?? {}
 
     const count = await codesharesModel.countAll(
-      'createdBy.userId',
+      "createdBy.userId",
       ctx.me.id,
       { signal: new AbortController().signal },
     )
 
     // check codeshare count limits
-    logger.debug('createCodeshare: codeshare count:', {
+    logger.debug("createCodeshare: codeshare count:", {
       count,
       anonymous: ctx.me.anonymous,
       meId: ctx.me.id,
@@ -288,7 +288,7 @@ export default class CodeshareResolver {
         {
           status: valueDesc(409),
           limit: valueDesc(ANON_CODESHARE_LIMIT),
-          code: valueDesc('ANON_CODESHARE_LIMIT_REACHED'),
+          code: valueDesc("ANON_CODESHARE_LIMIT_REACHED"),
         },
       )
     }
@@ -299,7 +299,7 @@ export default class CodeshareResolver {
       // }
       // check if user is pro
       const plan = await subscriptionPlansModel.getOne(
-        'createdBy.userId',
+        "createdBy.userId",
         ctx.me.id,
       )
       // check if pro plan exists
@@ -311,7 +311,7 @@ export default class CodeshareResolver {
           {
             status: valueDesc(409),
             limit: valueDesc(NON_PRO_CODESHARE_LIMIT),
-            code: valueDesc('NON_PRO_CODESHARE_LIMIT_REACHED'),
+            code: valueDesc("NON_PRO_CODESHARE_LIMIT_REACHED"),
           },
         )
       }
@@ -324,7 +324,7 @@ export default class CodeshareResolver {
           {
             status: valueDesc(409),
             limit: valueDesc(NON_PRO_CODESHARE_LIMIT),
-            code: valueDesc('NON_PRO_CODESHARE_LIMIT_REACHED'),
+            code: valueDesc("NON_PRO_CODESHARE_LIMIT_REACHED"),
           },
         )
       }
@@ -349,12 +349,11 @@ export default class CodeshareResolver {
       },
       codeshareFields,
     )
-    await (redisClient.pubSub as RedisPubSubEngine<CodeshareNotifyPayload>).publish(
-      `${topics.CREATED_CODESHARE}:${ctx.me.id}`,
-      {
-        codeshare: toJSON(codeshare),
-      },
-    )
+    await (
+      redisClient.pubSub as RedisPubSubEngine<CodeshareNotifyPayload>
+    ).publish(`${topics.CREATED_CODESHARE}:${ctx.me.id}`, {
+      codeshare: toJSON(codeshare),
+    })
 
     return {
       me: ctx.me,
@@ -366,9 +365,9 @@ export default class CodeshareResolver {
   }
 
   @Mutation(() => UpdateCodeshareResponse)
-  @UseMiddleware(rateLimit('updateCodeshare', 125))
+  @UseMiddleware(rateLimit("updateCodeshare", 125))
   async updateCodeshare(
-    @Arg('input')
+    @Arg("input")
     {
       id,
       modeName,
@@ -380,9 +379,9 @@ export default class CodeshareResolver {
     @Ctx() ctx: ResolverContextType,
     @Info() info: GraphQLResolveInfo,
   ) {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
-    const codeshareId = idUtils.decodeRelayId('Codeshare', id)
-    let codeshare = await codesharesModel.getOne('id', codeshareId)
+    if (!ctx.me) throw new AppError("not authenticated", { status: 401 })
+    const codeshareId = idUtils.decodeRelayId("Codeshare", id)
+    let codeshare = await codesharesModel.getOne("id", codeshareId)
     // check exists
     if (!codeshare) {
       throw new AppError("'codeshare' not found", { status: 404 })
@@ -394,7 +393,7 @@ export default class CodeshareResolver {
       codeshare?.canEdit?.userIds?.length !== 0 &&
       !codeshare?.canEdit?.userIds?.includes(ctx.me.id)
     ) {
-      throw new AppError('access denied', {
+      throw new AppError("access denied", {
         status: 403,
         clientId: ctx.clientId,
         userId: ctx.me.id,
@@ -413,7 +412,7 @@ export default class CodeshareResolver {
           codeCheckpoint: {
             ...codeCheckpoint,
             codeHistoryId: idUtils.decodeRelayId(
-              'CodeHistory',
+              "CodeHistory",
               codeCheckpoint.codeHistoryId,
             ),
             createdBy: {
@@ -426,7 +425,7 @@ export default class CodeshareResolver {
     const updateModeName = modeName ? { modeName } : {}
     const updateTabSize = tabSize ? { tabSize } : {}
     const updateTitle = title != null ? { title } : {}
-    codeshare = await codesharesModel.updateOne('id', codeshareId, {
+    codeshare = await codesharesModel.updateOne("id", codeshareId, {
       ...updateCreatedBy,
       ...updateCodeCheckpoint,
       ...updateModeName,
@@ -438,12 +437,11 @@ export default class CodeshareResolver {
         userId: ctx.me.id,
       },
     })
-    await (redisClient.pubSub as RedisPubSubEngine<CodeshareNotifyPayload>).publish(
-      `${topics.UPDATED_CODESHARE}:${codeshareId}`,
-      {
-        codeshare: toJSON(codeshare),
-      },
-    )
+    await (
+      redisClient.pubSub as RedisPubSubEngine<CodeshareNotifyPayload>
+    ).publish(`${topics.UPDATED_CODESHARE}:${codeshareId}`, {
+      codeshare: toJSON(codeshare),
+    })
     const fields = parseFields<{ codeshare: FieldsRow }>(info)
     const codeshareFields =
       fields?.codeshare &&
@@ -454,18 +452,18 @@ export default class CodeshareResolver {
   }
 
   @Mutation(() => UpdateCodesharePermissionsResponseType)
-  @UseMiddleware(rateLimit('updateCodesharePermissions', 100))
+  @UseMiddleware(rateLimit("updateCodesharePermissions", 100))
   async updateCodesharePermissions(
-    @Arg('input')
+    @Arg("input")
     { id, viewOnly }: UpdateCodesharePermissionsInput,
     @Ctx() ctx: ResolverContextType,
   ) {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
-    const codeshareId = idUtils.decodeRelayId('Codeshare', id)
-    let codeshare = await codesharesModel.getOne('id', codeshareId, [
-      'id',
-      'canEdit',
-      'createdBy',
+    if (!ctx.me) throw new AppError("not authenticated", { status: 401 })
+    const codeshareId = idUtils.decodeRelayId("Codeshare", id)
+    let codeshare = await codesharesModel.getOne("id", codeshareId, [
+      "id",
+      "canEdit",
+      "createdBy",
     ])
     // check exists
     if (!codeshare) {
@@ -478,7 +476,7 @@ export default class CodeshareResolver {
       codeshare?.canEdit?.userIds?.length !== 0 &&
       !codeshare?.canEdit?.userIds?.includes(ctx.me.id)
     ) {
-      throw new AppError('access denied', {
+      throw new AppError("access denied", {
         status: 403,
         clientId: ctx.clientId,
         userId: ctx.me.id,
@@ -487,22 +485,22 @@ export default class CodeshareResolver {
     // if turning permissions on, make sure user has codeshare pro
     if (viewOnly) {
       const plan = await subscriptionPlansModel.getOne(
-        'createdBy.userId',
+        "createdBy.userId",
         ctx.me.id,
       )
       if (plan == null) {
-        throw new AppError('cannot set view only without codeshare pro', {
+        throw new AppError("cannot set view only without codeshare pro", {
           status: 403,
-          code: 'NON_PRO_SUBSCRIBER',
+          code: "NON_PRO_SUBSCRIBER",
         })
       }
       if (plan.expiresAt < new Date()) {
-        throw new AppError('cannot set view only without codeshare pro', {
+        throw new AppError("cannot set view only without codeshare pro", {
           status: 403,
-          code: 'PLAN_EXPIRED',
+          code: "PLAN_EXPIRED",
         })
       }
-      codeshare = await codesharesModel.updateOne('id', codeshareId, {
+      codeshare = await codesharesModel.updateOne("id", codeshareId, {
         canEdit: {
           userIds: [ctx.me.id],
         },
@@ -521,7 +519,7 @@ export default class CodeshareResolver {
         )
       }
     } else {
-      codeshare = await codesharesModel.updateOne('id', codeshareId, {
+      codeshare = await codesharesModel.updateOne("id", codeshareId, {
         canEdit: {
           // @ts-ignore
           userIds: r.literal(),
@@ -533,30 +531,29 @@ export default class CodeshareResolver {
         },
       })
     }
-    await (redisClient.pubSub as RedisPubSubEngine<CodeshareNotifyPayload>).publish(
-      `${topics.UPDATED_CODESHARE}:${codeshareId}`,
-      {
-        codeshare: toJSON(codeshare),
-      },
-    )
+    await (
+      redisClient.pubSub as RedisPubSubEngine<CodeshareNotifyPayload>
+    ).publish(`${topics.UPDATED_CODESHARE}:${codeshareId}`, {
+      codeshare: toJSON(codeshare),
+    })
     return {
       codeshare,
     }
   }
 
   @Mutation(() => DeleteCodeshareResponseType)
-  @UseMiddleware(rateLimit('deleteCodeshare', 60))
+  @UseMiddleware(rateLimit("deleteCodeshare", 60))
   async deleteCodeshare(
-    @Arg('input')
+    @Arg("input")
     input: DeleteCodeshareInput,
     @Ctx() ctx: ResolverContextType,
   ) {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
-    const codeshareId = idUtils.decodeRelayId('Codeshare', input.id)
-    let codeshare = await codesharesModel.getOne('id', codeshareId, [
-      'id',
-      'canEdit',
-      'createdBy',
+    if (!ctx.me) throw new AppError("not authenticated", { status: 401 })
+    const codeshareId = idUtils.decodeRelayId("Codeshare", input.id)
+    const codeshare = await codesharesModel.getOne("id", codeshareId, [
+      "id",
+      "canEdit",
+      "createdBy",
     ])
     // check exists
     if (!codeshare) {
@@ -569,21 +566,20 @@ export default class CodeshareResolver {
       // codeshare?.canEdit?.userIds?.length !== 0 &&
       // !codeshare?.canEdit?.userIds?.includes(ctx.me.id)
     ) {
-      throw new AppError('access denied', {
+      throw new AppError("access denied", {
         status: 403,
         clientId: ctx.clientId,
         userId: ctx.me.id,
       })
     }
-    await codesharesModel.deleteOne('id', codeshareId)
-    await (redisClient.pubSub as RedisPubSubEngine<CodeshareDeletionsPayload>).publish(
-      `${topics.DELETED_CODESHARE}:${ctx.me.id}`,
-      {
-        deletedCodeshareId: codeshareId,
-      },
-    )
+    await codesharesModel.deleteOne("id", codeshareId)
+    await (
+      redisClient.pubSub as RedisPubSubEngine<CodeshareDeletionsPayload>
+    ).publish(`${topics.DELETED_CODESHARE}:${ctx.me.id}`, {
+      deletedCodeshareId: codeshareId,
+    })
     return {
-      codeshareId: idUtils.encodeRelayId('Codeshare', codeshareId),
+      codeshareId: idUtils.encodeRelayId("Codeshare", codeshareId),
       me: ctx.me,
     }
   }
@@ -599,7 +595,7 @@ export default class CodeshareResolver {
         args: { input: CodeshareCreationsInput },
         ctx: ResolverContextType,
       ) => {
-        AppError.assert(ctx.me, 'not authenticated', { status: 401 })
+        AppError.assert(ctx.me, "not authenticated", { status: 401 })
         return redisClient.pubSub.asyncIterator<CodeshareCreationsPayload>(
           `${topics.CREATED_CODESHARE}:${ctx.me.id}`,
         )
@@ -612,7 +608,7 @@ export default class CodeshareResolver {
         if (payload.codeshare.modifiedBy.clientId === ctx.clientId) {
           return false
         }
-        logger.debug('CREATED_CODESHARE:filter:', {
+        logger.debug("CREATED_CODESHARE:filter:", {
           payload,
         })
         return true
@@ -621,7 +617,7 @@ export default class CodeshareResolver {
   })
   async codeshareCreations(
     @Root() { codeshare }: CodeshareNotifyPayload,
-    @Arg('input') input: CodeshareCreationsInput,
+    @Arg("input") input: CodeshareCreationsInput,
   ): Promise<CodeshareCreationsPayload> {
     // TODO: fields?
     return {
@@ -639,8 +635,8 @@ export default class CodeshareResolver {
         args: { input: CodeshareUpdatesInput },
         ctx: ResolverContextType,
       ) => {
-        AppError.assert(ctx.me, 'not authenticated', { status: 401 })
-        const codeshareId = idUtils.decodeRelayId('Codeshare', args.input.id)
+        AppError.assert(ctx.me, "not authenticated", { status: 401 })
+        const codeshareId = idUtils.decodeRelayId("Codeshare", args.input.id)
         return redisClient.pubSub.asyncIterator(
           `${topics.UPDATED_CODESHARE}:${codeshareId}`,
         )
@@ -653,7 +649,7 @@ export default class CodeshareResolver {
         if (payload.codeshare.modifiedBy.clientId === ctx.clientId) {
           return false
         }
-        logger.debug('UPDATED_CODESHARE:filter:', {
+        logger.debug("UPDATED_CODESHARE:filter:", {
           payload,
         })
         return true
@@ -662,7 +658,7 @@ export default class CodeshareResolver {
   })
   async codeshareUpdates(
     @Root() { codeshare }: CodeshareNotifyPayload,
-    @Arg('input') input: CodeshareUpdatesInput,
+    @Arg("input") input: CodeshareUpdatesInput,
   ): Promise<CodeshareUpdatesPayload> {
     // TODO: fields?
     return {
@@ -677,7 +673,7 @@ export default class CodeshareResolver {
         args: { input: CodeshareDeletionsPayload },
         ctx: ResolverContextType,
       ) => {
-        AppError.assert(ctx.me, 'not authenticated', { status: 401 })
+        AppError.assert(ctx.me, "not authenticated", { status: 401 })
         return redisClient.pubSub.asyncIterator(
           `${topics.DELETED_CODESHARE}:${ctx.me.id}`,
         )
@@ -691,7 +687,7 @@ export default class CodeshareResolver {
         // if (payload.codeshare.modifiedBy.clientId === ctx.clientId) {
         //   return false
         // }
-        logger.debug('DELETED_CODESHARE:filter:', {
+        logger.debug("DELETED_CODESHARE:filter:", {
           payload,
         })
         return true
@@ -700,18 +696,18 @@ export default class CodeshareResolver {
   })
   async codeshareDeletions(
     @Root() payload: CodeshareNotifyPayload,
-    @Arg('input') input: CodeshareDeletionsInput,
+    @Arg("input") input: CodeshareDeletionsInput,
   ): Promise<CodeshareDeletionsPayload> {
     return {
       deletedCodeshareId: idUtils.encodeRelayId(
-        'Codeshare',
+        "Codeshare",
         payload.codeshare.id,
       ),
     }
   }
 }
 
-function toJSON(codeshare: CodeshareRow): CodeshareNotifyPayload['codeshare'] {
+function toJSON(codeshare: CodeshareRow): CodeshareNotifyPayload["codeshare"] {
   return {
     ...codeshare,
     createdAt: codeshare.createdAt.toISOString(),
@@ -719,12 +715,12 @@ function toJSON(codeshare: CodeshareRow): CodeshareNotifyPayload['codeshare'] {
   }
 }
 
-function castDates(codeshare: CodeshareNotifyPayload['codeshare']): Codeshare {
-  return ({
+function castDates(codeshare: CodeshareNotifyPayload["codeshare"]): Codeshare {
+  return {
     ...codeshare,
     createdAt: new Date(codeshare.createdAt),
     modifiedAt: new Date(codeshare.modifiedAt),
-  } as unknown) as Codeshare
+  } as unknown as Codeshare
 }
 
 function pick<T>(obj: T, fields?: Array<string>): T {

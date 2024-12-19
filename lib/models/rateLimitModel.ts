@@ -1,19 +1,22 @@
 import { Ratelimit as UpstashRatelimit } from "@upstash/ratelimit"
-import { get } from "env-var"
-import { kv } from "@vercel/kv"
+
+import { redisClient as redis } from "@/lib/clients/redis/redis"
+import { get } from "@/lib/common/env/env"
 
 get("KV_REST_API_URL").required().asUrlString()
 get("KV_REST_API_TOKEN").required().asString()
 
-const RATELIMIT_WINDOW_UNIT = get("RATELIMIT_WINDOW_UNIT")
-  .required()
-  .asEnum(["s", "m", "h", "d"])
-const RATELIMIT_WINDOW_SIZE = get("RATELIMIT_WINDOW_SIZE")
-  .required()
-  .asIntPositive()
-const RATELIMIT_MAX_REQUESTS = get("RATELIMIT_MAX_REQUESTS")
-  .required()
-  .asIntPositive()
+const RATELIMIT_LIMIT = get("RATELIMIT_LIMIT").default("30").asIntPositive()
+const RATELIMIT_DURATION = get("RATELIMIT_DURATION")
+  .default("60s")
+  .asDurationString()
+
+export type Unit = "ms" | "s" | "m" | "h" | "d"
+export type Duration = `${number} ${Unit}` | `${number}${Unit}`
+export type RatelimitConfig = {
+  limit?: number
+  duration?: Duration
+}
 
 type RatelimitResponse = {
   // Whether the request may pass(true) or exceeded the limit(false)
@@ -44,13 +47,18 @@ type RatelimitResponse = {
 export class Ratelimit {
   private ratelimit: UpstashRatelimit
 
-  constructor() {
+  constructor(
+    {
+      limit = RATELIMIT_LIMIT,
+      duration = RATELIMIT_DURATION,
+    }: RatelimitConfig = {
+      limit: RATELIMIT_LIMIT,
+      duration: RATELIMIT_DURATION,
+    },
+  ) {
     this.ratelimit = new UpstashRatelimit({
-      redis: kv,
-      limiter: UpstashRatelimit.slidingWindow(
-        RATELIMIT_MAX_REQUESTS,
-        `${RATELIMIT_WINDOW_SIZE} ${RATELIMIT_WINDOW_UNIT}`,
-      ),
+      redis,
+      limiter: UpstashRatelimit.slidingWindow(limit, duration),
     })
   }
 
@@ -77,6 +85,8 @@ export class Ratelimit {
   ): Promise<RatelimitResponse> => {
     if (process.env.NODE_ENV == "development") return this.noLimit()
 
-    return this.ratelimit.limit(`app:ratelimit:${key}:${userId ?? ip}`)
+    return this.ratelimit.limit(
+      `codeshare:api:ratelimit:${userId ?? ip}:${key}`,
+    )
   }
 }

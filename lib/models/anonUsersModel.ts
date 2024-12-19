@@ -1,9 +1,11 @@
-import RedisModel from "@/lib/clients/RedisModel"
 import { v4 } from "uuid"
-import { UserRow } from "./usersModel"
-import getEnvAsDuration from "../utils/getEnvAsDuration"
 
-const TOKEN_DURATION_MS = getEnvAsDuration("TOKEN_DURATION")
+import RedisModel from "@/lib/clients/redis/RedisModel"
+import { get } from "@/lib/common/env/env"
+
+import { UserRow } from "./usersModel"
+
+const TOKEN_DURATION_MS = get("TOKEN_DURATION").required().asDuration()
 
 export type AnonUserRecord = {
   id: UserRow["id"]
@@ -31,19 +33,21 @@ export class AnonUsersModel extends RedisModel<AnonUserRecord> {
   static genAnonId() {
     return this.prependAnonNamespace(v4())
   }
+
+  constructor() {
+    super("anonUsers", { index: "id", ttl: TOKEN_DURATION_MS })
+  }
+
   async create(): Promise<AnonUserRecord> {
     const anonUser = {
       id: AnonUsersModel.genAnonId(),
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + TOKEN_DURATION_MS),
     }
 
     return this.upsert(anonUser)
   }
 }
 
-const anonUsersModel = new AnonUsersModel("anonUsers", {
-  index: "id",
-})
+const anonUsersModel = new AnonUsersModel()
 
 export default anonUsersModel

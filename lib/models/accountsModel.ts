@@ -1,30 +1,19 @@
-import { ProviderType } from "next-auth/providers/index"
+import { Selectable } from "kysely"
+
+import pg, { CodeshareDB } from "@/lib/clients/postgres/postgres"
 import PostgresModel, {
   PostgresModelError,
   PostgresModelErrorProps,
-} from "./pg/PostgresModel"
-import { Generated, Selectable } from "kysely"
-import pg, { CodeshareDB } from "@/lib/clients/postgres"
+} from "@/lib/clients/postgres/PostgresModel"
+import AccountSchema from "@/lib/clients/postgres/schemas/account"
 
-export class AccountsModelError<
-  Props extends PostgresModelErrorProps,
-> extends PostgresModelError<Props> {}
-
-export interface AccountsTable {
-  id: Generated<string>
-  type: ProviderType // string
-  userId: string
+interface AccountsModelErrorProps extends PostgresModelErrorProps {
   provider: string
   providerAccountId: string
-  // optional
-  accessToken: string | null
-  expiresAt: Date | null
-  idToken: string | null
-  refreshToken: string | null
-  scope: string | null
-  sessionState: string | number | boolean | object | null // TODO: how to schema this?
-  tokenType: string | null
 }
+export class AccountsModelError extends PostgresModelError {}
+
+export type AccountsTable = AccountSchema
 export type AccountRow = Selectable<AccountsTable>
 // export type InsertableAccountRow = Insertable<AccountsTable>
 // export type UpdateableAccountRow = Updateable<AccountsTable>
@@ -35,7 +24,7 @@ export type AccountIndex = keyof AccountIndexes
 
 // aliases
 type Row = AccountRow
-const ModelError: typeof AccountsModelError = AccountsModelError
+const ModelError = AccountsModelError
 
 export class AccountsModel extends PostgresModel<
   CodeshareDB,
@@ -52,7 +41,7 @@ export class AccountsModel extends PostgresModel<
   ): Promise<Row | null> {
     const rows = await this.getWhere(
       {
-        provider,
+        provider: provider as string,
         providerAccountId,
       },
       {
@@ -72,7 +61,7 @@ export class AccountsModel extends PostgresModel<
   ): Promise<Row> {
     const row = await this.deleteWhere(
       {
-        provider,
+        provider: provider as string,
         providerAccountId,
       },
       {
@@ -83,10 +72,15 @@ export class AccountsModel extends PostgresModel<
       },
     )
 
-    ModelError.assertWithCode(row != null, 404, `${this.rowName} not found`, {
-      provider,
-      providerAccountId,
-    })
+    AccountsModelError.assertWithStatus<AccountsModelErrorProps>(
+      row != null,
+      404,
+      `${this.rowName} not found`,
+      {
+        provider,
+        providerAccountId,
+      },
+    )
 
     return row[0]
   }

@@ -2,63 +2,140 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
+/*
+--aqua: #7fdbff;
+--blue: #0074d9;
+--navy: #001f3f;
+--teal: #39cccc;
+--green: #2ecc40;
+--olive: #3d9970;
+--lime: #01ff70;
+
+--yellow: #ffdc00;
+--orange: #ff851b;
+--red: #ff4136;
+--fuchsia: #f012be;
+--purple: #b10dc9;
+--maroon: #85144b;
+
+--white: #fff;
+--silver: #f3f3f4;
+--grey: #aaa;
+--black: #111;
+--grey10: #d9dadb;
+--grey15: #cacbcd;
+--grey30: #b3b5b8;
+--grey50: #8e9095;
+
+--cs-pink: #ec3360;
+--cs-pink-light: #ff658c;
+--cs-blue-dark: #30353e;
+--cs-blue: #4d76ba;
+--cs-grey: #f3f3f4;
+--cs-green: #56af8a;
+*/
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 224 71.4% 4.1%;
-    --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
-    --popover: 0 0% 100%;
+    /* Cool */
+    --aqua: 197, 100%, 66%;
+    --blue: 207, 100%, 37%;
+    --navy: 210, 100%, 12%;
+    --teal: 174, 96%, 47%;
+    --green: 120, 77%, 47%;
+    --olive: 162, 60%, 34%;
+    --lime: 145, 100%, 50%;
+
+    /* Warm */
+    --yellow: 52, 100%, 50%;
+    --orange: 28, 100%, 50%;
+    --red: 0, 100%, 50%;
+    --fuchsia: 322, 92%, 50%;
+    --purple: 291, 100%, 40%;
+    --maroon: 345, 100%, 31%;
+
+    /* Gray Scale */
+    --white: 0, 0%, 100%;
+    --silver: 240, 4%, 95%;
+    --grey: 0, 67%, 33%;
+    --black: 0, 0%, 7%;
+    --grey10: 210, 3%, 85%;
+    --grey15: 220, 3%, 80%;
+    --grey30: 216, 3%, 71%;
+    --grey50: 223, 3%, 57%;
+
+    /* Custom colors */
+    --cs-pink: 345, 83%, 56%;
+    --cs-pink-light: 345, 100%, 70%;
+    --cs-blue-dark: 219, 13%, 22%;
+    --cs-blue: 217, 44%, 52%;
+    --cs-grey: var(--silver);
+    --cs-green: 155, 36%, 51%;
+
+    /* App colors */
+    --background: var(--white);
+    --foreground: var(--black);
+
+    --primary: var(--cs-pink);
+    --primary-foreground: var(--white);
+
+    --secondary: var(--cs-blue);
+    --secondary-foreground: var(--white);
+
+    --tertiary: var(--cs-blue-dark);
+    --tertiary-foreground: var(--grey10);
+
+    /* start-enforce-alphabetization */
+    --accent: var(--tertiary);
+    --accent-foreground: var(--white);
+    --border: var(--grey10);
+    --border-input: var(--grey10);
+    --border-card: var(--grey10);
+    --card: var(--white);
+    --card-foreground: var(--black);
+    --destructive: var(--red);
+    --destructive-foreground: var(--white);
+    --link: var(--cs-blue);
+    --label: var(--grey50);
+    --muted: var(--grey15);
+    --muted-foreground: var(--grey30);
+    --popover: var(--white);
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 220.9 39.3% 11%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220.9 39.3% 11%;
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
-    --accent: 220 14.3% 95.9%;
-    --accent-foreground: 220.9 39.3% 11%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 224 71.4% 4.1%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    --ring: var(--cs-blue), 0.2;
+    /* end-enforce-alphabetization */
   }
+
   .dark {
     --background: 224 71.4% 4.1%;
     --foreground: 210 20% 98%;
+
     --card: 224 71.4% 4.1%;
     --card-foreground: 210 20% 98%;
+
     --popover: 224 71.4% 4.1%;
     --popover-foreground: 210 20% 98%;
-    --primary: 210 20% 98%;
-    --primary-foreground: 220.9 39.3% 11%;
-    --secondary: 215 27.9% 16.9%;
+
+    --primary: 349 82% 59%;
+    --primary-foreground: 210 20% 98%;
+
+    --secondary: 218 59% 51%;
     --secondary-foreground: 210 20% 98%;
+
+    --tertiary: 218 22% 21%;
+
     --muted: 215 27.9% 16.9%;
     --muted-foreground: 217.9 10.6% 64.9%;
+
     --accent: 215 27.9% 16.9%;
     --accent-foreground: 210 20% 98%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 20% 98%;
+
     --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
     --ring: 216 12.2% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
   }
 }
 
@@ -69,4 +146,8 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.custom-bg-hero-gradient {
+  background-image: linear-gradient(-180deg, #30353e 30%, #4d76ba 90%);
 }

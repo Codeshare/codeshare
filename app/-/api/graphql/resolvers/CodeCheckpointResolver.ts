@@ -1,29 +1,30 @@
-import AppError from '~/helpers/AppError'
-import idUtils from '@codeshare/id-utils'
-import { CodeCheckpoint } from './nodes/Codeshare'
-import { FieldResolver, Resolver, Root } from 'type-graphql'
-import { CodeHistoryEdge } from './nodes/CodeHistory'
-import codeHistoriesModel, { Row } from '~/models/codeHistories'
-import { codesharesModel } from '../models/codeshares'
-import { ignoreMessage } from 'ignore-errors'
+import { codesharesModel } from "@/app/-/api/graphql/models/codeshares"
+import idUtils from "@codeshare/id-utils"
+import AppError from "~/helpers/AppError"
+import codeHistoriesModel, { Row } from "~/models/codeHistories"
+import { ignoreMessage } from "ignore-errors"
+import { FieldResolver, Resolver, Root } from "type-graphql"
+
+import { CodeHistoryEdge } from "./nodes/CodeHistory"
+import { CodeCheckpoint } from "./nodes/Codeshare"
 
 @Resolver(() => CodeCheckpoint)
 export default class CodeshareCodeCheckpointResolver {
   @FieldResolver(() => CodeHistoryEdge)
   async codeHistoryEdge(@Root() codeCheckpoint: CodeCheckpoint) {
     let node = await codeHistoriesModel.getOne(
-      'id',
+      "id",
       codeCheckpoint.codeHistoryId,
     )
 
     // HACK: restore missing checkpoint
     if (node == null) {
-      const idSplit = codeCheckpoint.codeHistoryId.split(':')
+      const idSplit = codeCheckpoint.codeHistoryId.split(":")
       const codeshareId = idSplit.shift() as string
       const historyId = idSplit.pop() as string
-      const codeshare = await codesharesModel.getOne('id', codeshareId, [
-        'id',
-        'modifiedAt',
+      const codeshare = await codesharesModel.getOne("id", codeshareId, [
+        "id",
+        "modifiedAt",
       ])
       if (codeshare != null) {
         await codeHistoriesModel
@@ -43,7 +44,7 @@ export default class CodeshareCodeCheckpointResolver {
           )
           .catch(ignoreMessage(/already exists/))
         node = await codeHistoriesModel.getOne(
-          'id',
+          "id",
           codeCheckpoint.codeHistoryId,
         )
       }
@@ -59,10 +60,10 @@ export default class CodeshareCodeCheckpointResolver {
   }
   @FieldResolver()
   codeHistoryId(@Root() codeCheckpoint: CodeCheckpoint) {
-    return idUtils.encodeRelayId('CodeHistory', codeCheckpoint.codeHistoryId)
+    return idUtils.encodeRelayId("CodeHistory", codeCheckpoint.codeHistoryId)
   }
   @FieldResolver()
   async historyId(@Root() codeCheckpoint: CodeCheckpoint) {
-    return codeCheckpoint.codeHistoryId.split(':').pop()
+    return codeCheckpoint.codeHistoryId.split(":").pop()
   }
 }

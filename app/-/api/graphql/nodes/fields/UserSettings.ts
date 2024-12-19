@@ -1,8 +1,8 @@
-import 'reflect-metadata'
+import "reflect-metadata"
 
-import { Field, ObjectType } from 'type-graphql'
+import { Field, ObjectType } from "type-graphql"
 
-@ObjectType({ description: 'User settings' })
+@ObjectType({ description: "User settings" })
 export default class UserSettings {
   @Field({ nullable: true })
   keymap?: string

@@ -1,23 +1,23 @@
-import 'reflect-metadata'
+import "reflect-metadata"
 
-import {
-  CodeHistoryConnection,
-  CodeHistoryEdge,
-  TextOperationType,
-} from './CodeHistory'
-import { Field, ID, InputType, ObjectType } from 'type-graphql'
-
-import CreatedBy from './fields/CreatedBy'
-import GraphQLFirepadTextOperation from 'graphql-firepad-text-operation'
-import ModifiedBy from './fields/ModifiedBy'
-import Node from './Node'
 import {
   IsBoolean,
   IsDate,
   IsDefined,
   IsOptional,
   MaxLength,
-} from 'class-validator'
+} from "class-validator"
+import GraphQLFirepadTextOperation from "graphql-firepad-text-operation"
+import { Field, ID, InputType, ObjectType } from "type-graphql"
+
+import {
+  CodeHistoryConnection,
+  CodeHistoryEdge,
+  TextOperationType,
+} from "./CodeHistory"
+import CreatedBy from "./fields/CreatedBy"
+import ModifiedBy from "./fields/ModifiedBy"
+import Node from "./Node"
 
 @ObjectType()
 export class CanEdit {
@@ -64,7 +64,7 @@ export class CodeCheckpoint extends CodeCheckpointInput {
 
 // Codeshare Node
 
-@ObjectType({ description: 'The user model', implements: Node })
+@ObjectType({ description: "The user model", implements: Node })
 export default class Codeshare extends Node {
   @Field()
   @IsDefined()

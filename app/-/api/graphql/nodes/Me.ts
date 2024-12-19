@@ -1,14 +1,14 @@
-import 'reflect-metadata'
+import "reflect-metadata"
 
-import { Field, ObjectType } from 'type-graphql'
-import { IsDefined, IsOptional, MaxLength } from 'class-validator'
+import { IsDefined, IsOptional, MaxLength } from "class-validator"
+import { Field, ObjectType } from "type-graphql"
 
-import Codeshare from './Codeshare'
-import Connection from './fields/Connection'
-import Edge from './fields/Edge'
-import Node from './Node'
-import User from './User'
-import UserDefaultCodeshareSettings from './fields/UserDefaultCodeshareSettings'
+import Codeshare from "./Codeshare"
+import Connection from "./fields/Connection"
+import Edge from "./fields/Edge"
+import UserDefaultCodeshareSettings from "./fields/UserDefaultCodeshareSettings"
+import Node from "./Node"
+import User from "./User"
 
 @ObjectType({ implements: Edge })
 export class CodeshareEdge extends Edge {

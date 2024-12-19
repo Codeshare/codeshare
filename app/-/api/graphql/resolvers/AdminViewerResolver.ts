@@ -1,3 +1,17 @@
+import isAdminEmail from "@/app/-/api/graphql/isAdmin"
+import {
+  SubscriptionPlan,
+  SubscriptionPlanConnection,
+  SubscriptionPlanEdge,
+} from "@/app/-/api/graphql/nodes/SubscriptionPlan"
+import Viewer from "@/app/-/api/graphql/nodes/Viewer"
+import idUtils from "@codeshare/id-utils"
+import logger from "@codeshare/log"
+import { ResolverContextType } from "~/graphql/getContext"
+import { emailsModel } from "~/models/emails"
+import { planIds, subscriptionPlansModel } from "~/models/subscriptionPlans"
+import { GraphQLResolveInfo } from "graphql"
+import r from "rethinkdb"
 import {
   Arg,
   Ctx,
@@ -11,24 +25,13 @@ import {
   Query,
   Resolver,
   Root,
-} from 'type-graphql'
-import Viewer from '../nodes/Viewer'
-import AppError from '@/lib/codeshare/AppError'
-import { ResolverContextType } from '~/graphql/getContext'
-import {
-  SubscriptionPlanConnection,
-  SubscriptionPlan,
-  SubscriptionPlanEdge,
-} from '../nodes/SubscriptionPlan'
-import idUtils from '@codeshare/id-utils'
-import { planIds, subscriptionPlansModel } from '~/models/subscriptionPlans'
-import r from 'rethinkdb'
-import { emailsModel } from '~/models/emails'
-import isAdminEmail from '../isAdmin'
-import { GraphQLResolveInfo } from 'graphql'
-import logger from '@codeshare/log'
-import Context from './nodes/Context'
-import { v4 } from 'uuid'
+} from "type-graphql"
+import { v4 } from "uuid"
+
+import AppError from "@/lib/common/AppError"
+
+import Context from "./nodes/Context"
+
 const DAY = 24 * 60 * 60 * 1000
 const YEAR = DAY * 365
 
@@ -67,20 +70,20 @@ export class UpdateSubscriptionPlanResponse {
 export default class AdminViewerResolver {
   @Query(() => Context)
   async context(@Ctx() ctx: ResolverContextType) {
-    logger.debug('context', {})
+    logger.debug("context", {})
 
-    AppError.assert(ctx.me, 'not authenticated', { status: 401 })
-    AppError.assert(!ctx.me.anonymous, 'access denied', {
+    AppError.assert(ctx.me, "not authenticated", { status: 401 })
+    AppError.assert(!ctx.me.anonymous, "access denied", {
       status: 403,
       userId: ctx.me.id,
       clientId: ctx.clientId,
     })
 
-    const emailRow = await emailsModel.getOne('createdBy.userId', ctx.me.id)
-    AppError.assert(emailRow, 'access denied', { status: 403 })
+    const emailRow = await emailsModel.getOne("createdBy.userId", ctx.me.id)
+    AppError.assert(emailRow, "access denied", { status: 403 })
 
     const email = emailRow.id
-    AppError.assert(isAdminEmail(email), 'access denied', { status: 403 })
+    AppError.assert(isAdminEmail(email), "access denied", { status: 403 })
 
     return ctx
   }
@@ -91,45 +94,45 @@ export default class AdminViewerResolver {
 
   @Mutation(() => CreateSubscriptionPlanResponse)
   async createSubscriptionPlan(
-    @Arg('input') input: CreateSubscriptionPlanInput,
+    @Arg("input") input: CreateSubscriptionPlanInput,
     @Ctx() ctx: ResolverContextType,
     @Info() info: GraphQLResolveInfo,
   ) {
-    logger.debug('subscriptionPlans', {})
-    AppError.assert(ctx.me, 'not authenticated', { status: 401 })
-    AppError.assert(!ctx.me.anonymous, 'access denied', {
+    logger.debug("subscriptionPlans", {})
+    AppError.assert(ctx.me, "not authenticated", { status: 401 })
+    AppError.assert(!ctx.me.anonymous, "access denied", {
       status: 403,
       userId: ctx.me.id,
       clientId: ctx.clientId,
     })
 
     const { email, expiresAt } = input
-    logger.debug('createSubscriptionPlan', { email, expiresAt })
+    logger.debug("createSubscriptionPlan", { email, expiresAt })
 
     const adminEmailRow = await emailsModel.getOne(
-      'createdBy.userId',
+      "createdBy.userId",
       ctx.me.id,
     )
-    AppError.assert(adminEmailRow, 'access denied', { status: 403 })
+    AppError.assert(adminEmailRow, "access denied", { status: 403 })
     const adminEmail = adminEmailRow.id
-    AppError.assert(isAdminEmail(adminEmail), 'access denied', { status: 403 })
+    AppError.assert(isAdminEmail(adminEmail), "access denied", { status: 403 })
 
-    const customerEmailRow = await emailsModel.getOne('id', email)
-    AppError.assert(customerEmailRow, 'email not found', { status: 404 })
+    const customerEmailRow = await emailsModel.getOne("id", email)
+    AppError.assert(customerEmailRow, "email not found", { status: 404 })
 
     const customerUserId = customerEmailRow.createdBy.userId
 
     const existingSubscriptionPlan = await subscriptionPlansModel.getOne(
-      'createdBy.userId',
+      "createdBy.userId",
       customerUserId,
     )
     AppError.assert(
       existingSubscriptionPlan == null,
-      'subscription plan already exists',
+      "subscription plan already exists",
       { status: 409 },
     )
 
-    const stripeCustomerId = 'manual:' + v4()
+    const stripeCustomerId = "manual:" + v4()
     const subscriptionPlan = await subscriptionPlansModel.insert({
       id: stripeCustomerId,
       createdAt: new Date(),
@@ -160,29 +163,29 @@ export default class AdminViewerResolver {
 
   @Mutation(() => UpdateSubscriptionPlanResponse)
   async updateSubscriptionPlan(
-    @Arg('input') input: UpdateSubscriptionPlanInput,
+    @Arg("input") input: UpdateSubscriptionPlanInput,
     @Ctx() ctx: ResolverContextType,
     @Info() info: GraphQLResolveInfo,
   ) {
-    logger.debug('subscriptionPlans', {})
-    AppError.assert(ctx.me, 'not authenticated', { status: 401 })
-    AppError.assert(!ctx.me.anonymous, 'access denied', {
+    logger.debug("subscriptionPlans", {})
+    AppError.assert(ctx.me, "not authenticated", { status: 401 })
+    AppError.assert(!ctx.me.anonymous, "access denied", {
       status: 403,
       userId: ctx.me.id,
       clientId: ctx.clientId,
     })
 
-    const id = idUtils.decodeRelayId('SubscriptionPlan', input.id)
+    const id = idUtils.decodeRelayId("SubscriptionPlan", input.id)
     const { expiresAt } = input
-    logger.debug('updateSubscriptionPlan', { id, expiresAt })
+    logger.debug("updateSubscriptionPlan", { id, expiresAt })
 
-    const emailRow = await emailsModel.getOne('createdBy.userId', ctx.me.id)
-    AppError.assert(emailRow, 'access denied', { status: 403 })
+    const emailRow = await emailsModel.getOne("createdBy.userId", ctx.me.id)
+    AppError.assert(emailRow, "access denied", { status: 403 })
 
     const email = emailRow.id
-    AppError.assert(isAdminEmail(email), 'access denied', { status: 403 })
+    AppError.assert(isAdminEmail(email), "access denied", { status: 403 })
 
-    const subscriptionPlan = await subscriptionPlansModel.updateOne('id', id, {
+    const subscriptionPlan = await subscriptionPlansModel.updateOne("id", id, {
       expiresAt: new Date(expiresAt),
       modifiedAt: new Date(),
       modifiedBy: {
@@ -212,26 +215,26 @@ export default class AdminViewerResolver {
   async subscriptionPlans(
     @Ctx() ctx: ResolverContextType,
     @Root() viewer: Viewer,
-    @Arg('first', () => Int!) first: number,
-    @Arg('after', { nullable: true }) after?: string,
+    @Arg("first", () => Int!) first: number,
+    @Arg("after", { nullable: true }) after?: string,
   ): Promise<SubscriptionPlanConnection> {
-    logger.debug('subscriptionPlans', { first, after })
-    AppError.assert(ctx.me, 'not authenticated', { status: 401 })
-    AppError.assert(!ctx.me.anonymous, 'access denied', {
+    logger.debug("subscriptionPlans", { first, after })
+    AppError.assert(ctx.me, "not authenticated", { status: 401 })
+    AppError.assert(!ctx.me.anonymous, "access denied", {
       status: 403,
       userId: ctx.me.id,
       clientId: ctx.clientId,
     })
 
-    const emailRow = await emailsModel.getOne('createdBy.userId', ctx.me.id)
-    AppError.assert(emailRow, 'access denied', {
+    const emailRow = await emailsModel.getOne("createdBy.userId", ctx.me.id)
+    AppError.assert(emailRow, "access denied", {
       status: 403,
       userId: ctx.me.id,
       clientId: ctx.clientId,
     })
 
     const email = emailRow.id
-    AppError.assert(isAdminEmail(email), 'access denied', {
+    AppError.assert(isAdminEmail(email), "access denied", {
       status: 403,
       email,
       userId: ctx.me.id,
@@ -241,7 +244,7 @@ export default class AdminViewerResolver {
     const afterIndex = after ? new Date(idUtils.decodeRelayConnId(after)) : null
     // TODO: validate date
     const rows = await subscriptionPlansModel.getBetween(
-      r.desc('createdAt'),
+      r.desc("createdAt"),
       // @ts-ignore
       [
         // @ts-ignore
@@ -258,16 +261,16 @@ export default class AdminViewerResolver {
     )
 
     const edges = []
-    for await (let row of rows) {
+    for await (const row of rows) {
       edges.push({
-        node: ({
+        node: {
           ...row,
-        } as unknown) as SubscriptionPlan,
+        } as unknown as SubscriptionPlan,
         cursor: idUtils.encodeRelayConnId(row.createdAt.toISOString()),
       })
     }
 
-    let hasNextPage = edges.length > first
+    const hasNextPage = edges.length > first
     if (hasNextPage) {
       edges.pop()
     }

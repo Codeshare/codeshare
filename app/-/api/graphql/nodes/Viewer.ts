@@ -1,9 +1,10 @@
-import { IsDefined } from 'class-validator'
-import 'reflect-metadata'
+import { IsDefined } from "class-validator"
 
-import { Field, ObjectType } from 'type-graphql'
+import "reflect-metadata"
 
-import Me from './Me'
+import { Field, ObjectType } from "type-graphql"
+
+import Me from "./Me"
 
 @ObjectType()
 export default class Viewer {

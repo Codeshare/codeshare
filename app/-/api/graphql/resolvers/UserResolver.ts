@@ -1,16 +1,17 @@
-import { ResolverContextType } from './getContext'
-import idUtils from '@codeshare/id-utils'
-import User from '~/graphql/nodes/User'
-import { Arg, Ctx, Root, FieldResolver, ID, Int, Resolver } from 'type-graphql'
-import { emailsModel } from '~/models/emails'
-import r from 'rethinkdb'
-import { ignoreMessage } from 'ignore-errors'
+import idUtils from "@codeshare/id-utils"
+import isAdminEmail from "~/graphql/isAdmin"
+import User from "~/graphql/nodes/User"
+import { emailsModel } from "~/models/emails"
+import { subscriptionPlansModel } from "~/models/subscriptionPlans"
+import { ignoreMessage } from "ignore-errors"
+import r from "rethinkdb"
+import { Arg, Ctx, FieldResolver, ID, Int, Resolver, Root } from "type-graphql"
+
+import { ResolverContextType } from "./getContext"
 import {
-  SubscriptionPlanConnection,
   SubscriptionPlan,
-} from './nodes/SubscriptionPlan'
-import { subscriptionPlansModel } from '~/models/subscriptionPlans'
-import isAdminEmail from '~/graphql/isAdmin'
+  SubscriptionPlanConnection,
+} from "./nodes/SubscriptionPlan"
 
 /**
  * Resolver
@@ -23,19 +24,19 @@ export default class UserResolver {
 
   @FieldResolver(() => ID)
   id(@Root() root: User) {
-    return idUtils.encodeRelayId('User', root.id)
+    return idUtils.encodeRelayId("User", root.id)
   }
 
   @FieldResolver()
   async email(@Root() root: User, @Ctx() ctx: ResolverContextType) {
     if (root.anonymous) return null
     const meEmailRow = await emailsModel.getOne(
-      'createdBy.userId',
-      ctx.me?.id ?? '',
+      "createdBy.userId",
+      ctx.me?.id ?? "",
     )
     const gen = await emailsModel.getBetween(
-      r.desc('createdBy.userIdAndCreatedAt'),
-      isAdminEmail(meEmailRow?.id ?? '')
+      r.desc("createdBy.userIdAndCreatedAt"),
+      isAdminEmail(meEmailRow?.id ?? "")
         ? [
             // @ts-ignore
             [root.id, r.minval],
@@ -60,13 +61,13 @@ export default class UserResolver {
   @FieldResolver(() => SubscriptionPlanConnection)
   async subscriptionPlans(
     @Root() user: User,
-    @Arg('first', () => Int!) first: number,
-    @Arg('after', { nullable: true }) after?: string,
+    @Arg("first", () => Int!) first: number,
+    @Arg("after", { nullable: true }) after?: string,
   ): Promise<SubscriptionPlanConnection> {
     const afterIndex = after ? new Date(idUtils.decodeRelayConnId(after)) : null
     // TODO: validate date
     const rows = await subscriptionPlansModel.getBetween(
-      r.desc('createdBy.userIdAndExpiresAt'),
+      r.desc("createdBy.userIdAndExpiresAt"),
       // @ts-ignore
       [
         // @ts-ignore
@@ -83,16 +84,16 @@ export default class UserResolver {
     )
 
     const edges = []
-    for await (let row of rows) {
+    for await (const row of rows) {
       edges.push({
-        node: ({
+        node: {
           ...row,
-        } as unknown) as SubscriptionPlan,
+        } as unknown as SubscriptionPlan,
         cursor: idUtils.encodeRelayConnId(row.expiresAt.toISOString()),
       })
     }
 
-    let hasNextPage = edges.length > first
+    const hasNextPage = edges.length > first
     if (hasNextPage) {
       edges.pop()
     }

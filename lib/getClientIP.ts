@@ -24,7 +24,6 @@ export default function getClientIp(
   return clientIP
 }
 
-
 // function getClientIp(xForwardedFor: string): string | null {
 //   if (xForwardedFor == null) return null
 

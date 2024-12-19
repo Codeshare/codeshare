@@ -1,10 +1,9 @@
-import 'reflect-metadata'
+import "reflect-metadata"
 
-import { Field, ObjectType } from 'type-graphql'
+import User from "@/app/-/api/graphql/nodes/nodes/User"
+import { Field, ObjectType } from "type-graphql"
 
-import User from '../nodes/User'
-
-@ObjectType({ description: 'Modified by user' })
+@ObjectType({ description: "Modified by user" })
 export default class ModifiedBy {
   @Field()
   clientId!: string

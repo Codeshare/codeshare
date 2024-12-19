@@ -1,6 +1,6 @@
-import idUtils from '@codeshare/id-utils'
-import { SubscriptionPlan } from '~/graphql/nodes/SubscriptionPlan'
-import { FieldResolver, ID, Resolver, Root } from 'type-graphql'
+import idUtils from "@codeshare/id-utils"
+import { SubscriptionPlan } from "~/graphql/nodes/SubscriptionPlan"
+import { FieldResolver, ID, Resolver, Root } from "type-graphql"
 
 /**
  * Resolver
@@ -13,7 +13,7 @@ export default class SubscriptionPlanResolver {
 
   @FieldResolver(() => ID)
   id(@Root() root: SubscriptionPlan) {
-    return idUtils.encodeRelayId('SubscriptionPlan', root.id)
+    return idUtils.encodeRelayId("SubscriptionPlan", root.id)
   }
 
   @FieldResolver()

@@ -1,13 +1,10 @@
-import { IS_DEV, IS_SERVER } from "@/lib/const/const"
-import { get } from "env-var"
 import { GraphQLResponse, RequestParameters, Variables } from "relay-runtime"
 import SimpleApiClient, { ExtendedRequestInit } from "simple-api-client"
 
-if (IS_SERVER) {
-  get("NEXT_PUBLIC_API_URL").required().asString()
-}
+import { get } from "@/lib/common/env/env"
+import logger from "@/lib/common/logger"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
+const API_URL = get("VERCEL_URL").required().asString()
 
 export interface HeadersType extends Record<string, string> {
   authorization: string
@@ -48,7 +45,7 @@ export default class CodeshareClient extends SimpleApiClient {
         jitter: (duration: number) => duration * Math.random(),
       },
     }).catch((err) => {
-      if (IS_DEV) console.error("GraphQL Request Error", err)
+      logger.error("GraphQL Request Error", { err })
       throw new Error(
         `Error fetching GraphQL query '${
           request.name
@@ -62,7 +59,7 @@ export default class CodeshareClient extends SimpleApiClient {
     // property of the response. If any exceptions occurred when processing the request,
     // throw an error to indicate to the developer what went wrong.
     if (Array.isArray(json.errors)) {
-      if (IS_DEV) console.error("GraphQL Response Error", json.errors)
+      logger.error("GraphQL Response Error", { errors: json.errors })
       throw new Error(
         `Error GraphQL response error for query '${
           request.name

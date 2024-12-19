@@ -5,22 +5,23 @@ import {
   IsNumber,
   IsOptional,
   MaxLength,
-} from 'class-validator'
-import 'reflect-metadata'
+} from "class-validator"
+
+import "reflect-metadata"
 
 import {
+  createUnionType,
   Field,
   Int,
   InterfaceType,
   ObjectType,
-  createUnionType,
-} from 'type-graphql'
+} from "type-graphql"
 
-import Connection from './fields/Connection'
-import CreatedBy from './fields/CreatedBy'
-import Edge from './fields/Edge'
-import ModifiedBy from './fields/ModifiedBy'
-import Node from './Node'
+import Connection from "./fields/Connection"
+import CreatedBy from "./fields/CreatedBy"
+import Edge from "./fields/Edge"
+import ModifiedBy from "./fields/ModifiedBy"
+import Node from "./Node"
 
 // TODO: nullable props?
 @ObjectType()
@@ -44,7 +45,7 @@ export default class CodeshareUser extends Node {
   @Field()
   @IsDefined()
   @MaxLength(15)
-  color!: String
+  color!: string
   @Field()
   @IsDefined()
   @IsDate()

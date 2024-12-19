@@ -1,6 +1,6 @@
-import 'reflect-metadata'
+import "reflect-metadata"
 
-import { Field, Int, InterfaceType, ObjectType } from 'type-graphql'
+import { Field, Int, InterfaceType, ObjectType } from "type-graphql"
 
 @ObjectType()
 class PageInfo {

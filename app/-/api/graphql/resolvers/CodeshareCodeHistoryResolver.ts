@@ -1,54 +1,54 @@
-import { rateLimit } from './../utils/rateLimit'
-import { redisClient } from './../clients/redisClient'
-import 'reflect-metadata'
-import abortable from 'abortable-generator'
+import { redisClient } from "./../clients/redisClient"
+import { rateLimit } from "./../utils/rateLimit"
 
-import AppError from '~/helpers/AppError'
-import {
-  codesharesModel,
-  Fields,
-  Row as CodeshareRow,
-} from './../models/codeshares'
-import { ResolverContextType } from './getContext'
-import r from 'rethinkdb'
-import parseFields from 'graphql-parse-fields'
-import GraphQLFirepadTextOperation from 'graphql-firepad-text-operation'
+import "reflect-metadata"
 
-import {
-  Ctx,
-  Arg,
-  ObjectType,
-  Field,
-  Mutation,
-  InputType,
-  Info,
-  Subscription,
-  Root,
-  PubSub,
-  Publisher,
-  ID,
-  Int,
-  FieldResolver,
-  Resolver,
-  UseMiddleware,
-} from 'type-graphql'
-
-import Codeshare from './nodes/Codeshare'
+import { memoErr } from "@/app/-/api/graphql/utils/memoError"
+import idUtils from "@codeshare/id-utils"
+import AppError from "~/helpers/AppError"
 import codeHistoriesModel, {
   Row as CodeHistoryRow,
   decodeHistoryId,
-} from '~/models/codeHistories'
-import idUtils from '@codeshare/id-utils'
+} from "~/models/codeHistories"
+import abortable from "abortable-generator"
+import { GraphQLResolveInfo } from "graphql"
+import GraphQLFirepadTextOperation from "graphql-firepad-text-operation"
+import RedisPubSubEngine from "graphql-ioredis-subscriptions"
+import parseFields from "graphql-parse-fields"
+import r from "rethinkdb"
+import {
+  Arg,
+  Ctx,
+  Field,
+  FieldResolver,
+  ID,
+  Info,
+  InputType,
+  Int,
+  Mutation,
+  ObjectType,
+  Publisher,
+  PubSub,
+  Resolver,
+  Root,
+  Subscription,
+  UseMiddleware,
+} from "type-graphql"
+
+import {
+  Row as CodeshareRow,
+  codesharesModel,
+  Fields,
+} from "./../models/codeshares"
+import { ResolverContextType } from "./getContext"
 import CodeHistory, {
   CodeHistoryConnection,
   CodeHistoryEdge,
   TextOperationType,
-} from './nodes/CodeHistory'
-import { GraphQLResolveInfo } from 'graphql'
-import { memoErr } from '../utils/memoError'
-import RedisPubSubEngine from 'graphql-ioredis-subscriptions'
+} from "./nodes/CodeHistory"
+import Codeshare from "./nodes/Codeshare"
 
-type CodeHistoryJSON = Omit<CodeHistoryRow, 'createdAt'> & {
+type CodeHistoryJSON = Omit<CodeHistoryRow, "createdAt"> & {
   createdAt: string
 }
 interface CodeHistoryNotifyPayload {
@@ -78,10 +78,10 @@ export class CreateCodeHistoryResponse {
 }
 type CreateCodeHistoryResult = Omit<
   CreateCodeHistoryResponse,
-  'codeshare' | 'newCodeHistoryEdge'
+  "codeshare" | "newCodeHistoryEdge"
 > & {
   codeshare: CodeshareRow
-  newCodeHistoryEdge: Omit<CodeHistoryEdge, 'node'> & {
+  newCodeHistoryEdge: Omit<CodeHistoryEdge, "node"> & {
     node: CodeHistoryRow
   }
 }
@@ -112,15 +112,15 @@ class CodeHistoryCreationsPayload {
 }
 type CodeHistoryCreationsResult = Omit<
   CodeHistoryCreationsPayload,
-  'newCodeHistoryEdge'
+  "newCodeHistoryEdge"
 > & {
-  newCodeHistoryEdge: Omit<CodeHistoryEdge, 'node'> & {
+  newCodeHistoryEdge: Omit<CodeHistoryEdge, "node"> & {
     node: CodeHistoryRow
   }
 }
 
 enum topics {
-  CREATED_CODE_HISTORY = 'CREATED_CODE_HISTORY',
+  CREATED_CODE_HISTORY = "CREATED_CODE_HISTORY",
 }
 
 @Resolver(() => CodeHistory)
@@ -131,7 +131,7 @@ export class CodeshareCodeHistoryFieldResolver {
 
   @FieldResolver(() => ID)
   id(@Root() root: Codeshare) {
-    return idUtils.encodeRelayId('CodeHistory', root.id)
+    return idUtils.encodeRelayId("CodeHistory", root.id)
   }
 }
 
@@ -140,26 +140,26 @@ export default class CodeshareCodeHistoryResolver {
   @FieldResolver(() => CodeHistoryConnection)
   async codeHistory(
     @Root() codeshare: Codeshare,
-    @Arg('after', { nullable: true }) after: string,
-    @Arg('first', () => Int!) first: number,
+    @Arg("after", { nullable: true }) after: string,
+    @Arg("first", () => Int!) first: number,
     @Ctx() ctx: ResolverContextType,
   ): Promise<CodeHistoryConnection> {
     let checkpointCodeHistoryId = codeshare.codeCheckpoint?.codeHistoryId
     if (!codeshare.codeCheckpoint && !after) {
-      const codeshare2 = await codesharesModel.getOne('id', codeshare.id, [
-        'codeCheckpoint',
+      const codeshare2 = await codesharesModel.getOne("id", codeshare.id, [
+        "codeCheckpoint",
       ])
       if (!codeshare2) {
         throw new AppError("'codeshare' not found", { status: 404 })
       }
       checkpointCodeHistoryId = codeshare2.codeCheckpoint?.codeHistoryId
     }
-    let checkpointHistoryId = checkpointCodeHistoryId?.split(':').pop()
+    let checkpointHistoryId = checkpointCodeHistoryId?.split(":").pop()
     let checkpointHistoryIndex = checkpointHistoryId
       ? decodeHistoryId(checkpointHistoryId)
       : null
     const checkpointHistory = checkpointCodeHistoryId
-      ? await codeHistoriesModel.getOne('id', checkpointCodeHistoryId, ['id'])
+      ? await codeHistoriesModel.getOne("id", checkpointCodeHistoryId, ["id"])
       : null
     if (checkpointHistory == null) {
       checkpointHistoryId = undefined
@@ -174,11 +174,11 @@ export default class CodeshareCodeHistoryResolver {
         !(afterIndex > checkpointHistoryIndex - 1000)
       ) {
         throw memoErr(
-          'after must be gte checkpoint (query)',
+          "after must be gte checkpoint (query)",
           (msg) =>
             new AppError(msg, { cachedStack: `AppError: ${msg}` } as any),
           {
-            message: valueDesc('after must be gte checkpoint (query)'),
+            message: valueDesc("after must be gte checkpoint (query)"),
             status: valueDesc(400),
             codeshareId: valueDesc(codeshare.id),
             checkpointHistoryIndex: valueDesc(checkpointHistoryIndex),
@@ -193,7 +193,7 @@ export default class CodeshareCodeHistoryResolver {
       afterId = undefined
     }
     const rows = await codeHistoriesModel.getBetween(
-      'codeshareIdAndHistoryId',
+      "codeshareIdAndHistoryId",
       [
         // @ts-ignore
         [codeshare.id, afterId || r.minval],
@@ -208,14 +208,14 @@ export default class CodeshareCodeHistoryResolver {
       },
     )
     const edges = []
-    for await (let codeHistory of rows) {
+    for await (const codeHistory of rows) {
       edges.push({
         node: codeHistory as CodeHistory,
         cursor: idUtils.encodeRelayConnId(codeHistory.historyId),
       })
     }
 
-    let hasNextPage = edges.length > first
+    const hasNextPage = edges.length > first
     if (hasNextPage) {
       edges.pop()
     }
@@ -244,24 +244,24 @@ export default class CodeshareCodeHistoryResolver {
    */
 
   @Mutation(() => CreateCodeHistoryResponse)
-  @UseMiddleware(rateLimit('createCodeHistory', 425))
+  @UseMiddleware(rateLimit("createCodeHistory", 425))
   async createCodeHistory(
-    @Arg('input')
+    @Arg("input")
     input: CreateCodeHistoryInput,
     @Ctx() ctx: ResolverContextType,
     @Info() info: GraphQLResolveInfo,
   ): Promise<CreateCodeHistoryResult> {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
+    if (!ctx.me) throw new AppError("not authenticated", { status: 401 })
 
-    const codeshareId = idUtils.decodeRelayId('Codeshare', input.codeshareId)
+    const codeshareId = idUtils.decodeRelayId("Codeshare", input.codeshareId)
     const fields = parseFields<{ codeshare: Fields }>(info)
     const codeshareFields: Fields = [
       ...(Object.keys(fields?.codeshare || []) as Fields),
-      'canEdit',
-      'createdBy',
+      "canEdit",
+      "createdBy",
     ]
     const codeshare = await codesharesModel.getOne(
-      'id',
+      "id",
       codeshareId,
       codeshareFields,
     )
@@ -276,7 +276,7 @@ export default class CodeshareCodeHistoryResolver {
       codeshare?.canEdit?.userIds?.length !== 0 &&
       !codeshare?.canEdit?.userIds?.includes(ctx.me.id)
     ) {
-      throw new AppError('access denied', {
+      throw new AppError("access denied", {
         status: 403,
         clientId: ctx.clientId,
         userId: ctx.me.id,
@@ -294,15 +294,14 @@ export default class CodeshareCodeHistoryResolver {
       historyId: input.historyId,
       value: input.value,
     })
-    await (redisClient.pubSub as RedisPubSubEngine<CodeHistoryNotifyPayload>).publish(
-      `${topics.CREATED_CODE_HISTORY}:${codeshareId}`,
-      {
-        codeHistory: {
-          ...toJSON(codeHistory),
-          historyIndex: decodeHistoryId(codeHistory.historyId),
-        },
+    await (
+      redisClient.pubSub as RedisPubSubEngine<CodeHistoryNotifyPayload>
+    ).publish(`${topics.CREATED_CODE_HISTORY}:${codeshareId}`, {
+      codeHistory: {
+        ...toJSON(codeHistory),
+        historyIndex: decodeHistoryId(codeHistory.historyId),
       },
-    )
+    })
 
     return {
       codeshare,
@@ -322,19 +321,20 @@ export default class CodeshareCodeHistoryResolver {
       args: { input: CodeHistoryCreationsInput },
       ctx: ResolverContextType,
     ) {
-      AppError.assert(ctx.me, 'not authenticated', { status: 401 })
+      AppError.assert(ctx.me, "not authenticated", { status: 401 })
       return abortable(async function* (raceAbort) {
-        let pubSubPayloads: AsyncIterableIterator<CodeHistoryNotifyPayload> | null = null
+        let pubSubPayloads: AsyncIterableIterator<CodeHistoryNotifyPayload> | null =
+          null
         // @ts-ignore
         let codeHistories = null
         try {
           // get codeshare
           const codeshareId = idUtils.decodeRelayId(
-            'Codeshare',
+            "Codeshare",
             args.input.codeshareId,
           )
           const codeshare = await raceAbort(
-            codesharesModel.getOne('id', codeshareId),
+            codesharesModel.getOne("id", codeshareId),
           )
           AppError.assert(codeshare, '"codeshare" not found', {
             id: codeshareId,
@@ -344,7 +344,7 @@ export default class CodeshareCodeHistoryResolver {
           // get and validate checkpointHistoryId and afterId
           const checkpointCodeHistoryId =
             codeshare.codeCheckpoint?.codeHistoryId
-          const checkpointHistoryId = checkpointCodeHistoryId?.split(':').pop()
+          const checkpointHistoryId = checkpointCodeHistoryId?.split(":").pop()
           const checkpointHistoryIndex = checkpointHistoryId
             ? decodeHistoryId(checkpointHistoryId)
             : null
@@ -359,11 +359,11 @@ export default class CodeshareCodeHistoryResolver {
             !(afterIndex > checkpointHistoryIndex - 1000)
           ) {
             throw memoErr(
-              'after must be gte checkpoint (sub)',
+              "after must be gte checkpoint (sub)",
               (msg) =>
                 new AppError(msg, { cachedStack: `AppError: ${msg}` } as any),
               {
-                message: valueDesc('after must be gte checkpoint (sub)'),
+                message: valueDesc("after must be gte checkpoint (sub)"),
                 status: valueDesc(400),
                 codeshareId: valueDesc(codeshare.id),
                 checkpointHistoryIndex: valueDesc(checkpointHistoryIndex),
@@ -383,16 +383,16 @@ export default class CodeshareCodeHistoryResolver {
           // )
           pubSubPayloads = await raceAbort(
             (signal) =>
-              (redisClient.pubSub.asyncIterator<CodeHistoryNotifyPayload>(
+              redisClient.pubSub.asyncIterator<CodeHistoryNotifyPayload>(
                 `${topics.CREATED_CODE_HISTORY}:${codeshareId}`,
                 signal,
-              ) as any) as AsyncIterableIterator<CodeHistoryNotifyPayload>,
+              ) as any as AsyncIterableIterator<CodeHistoryNotifyPayload>,
           )
 
           // get current codehistories
           codeHistories = await raceAbort((signal) =>
             codeHistoriesModel.getBetween(
-              'codeshareIdAndHistoryId',
+              "codeshareIdAndHistoryId",
               [
                 // @ts-ignore
                 [codeshareId, afterId || r.minval],
@@ -411,7 +411,7 @@ export default class CodeshareCodeHistoryResolver {
           // <- special
 
           // yield current codehistories
-          for await (let codeHistory of codeHistories) {
+          for await (const codeHistory of codeHistories) {
             yield { codeHistory }
           }
 
@@ -421,7 +421,7 @@ export default class CodeshareCodeHistoryResolver {
           // <- special
 
           // yield pubsub payloads
-          for await (let payload of pubSubPayloads) {
+          for await (const payload of pubSubPayloads) {
             // filter out other codeshare updates
             if (payload.codeHistory.createdBy.clientId === ctx.clientId) {
               continue
@@ -445,7 +445,7 @@ export default class CodeshareCodeHistoryResolver {
   })
   async codeHistoryCreations(
     @Root() { codeHistory }: CodeHistoryNotifyPayload,
-    @Arg('input') input: CodeHistoryCreationsInput,
+    @Arg("input") input: CodeHistoryCreationsInput,
   ): Promise<CodeHistoryCreationsResult> {
     return {
       newCodeHistoryEdge: {

@@ -1,9 +1,12 @@
-import { startServerAndCreateNextHandler } from "@as-integrations/next"
 import { ApolloServer } from "@apollo/server"
+import { startServerAndCreateNextHandler } from "@as-integrations/next"
 import { gql } from "graphql-tag"
 import { NextApiRequest } from "next"
+
 import getClientIp from "@/lib/getClientIP"
+
 import getContext from "./resolvers/getContext"
+
 // import { UserRow } from "@/lib/models/usersModel"
 
 const resolvers = {

@@ -1,6 +1,5 @@
-import 'reflect-metadata'
+import "reflect-metadata"
 
-import { Field, Int, ObjectType } from 'type-graphql'
 import {
   IsBoolean,
   IsDate,
@@ -8,14 +7,15 @@ import {
   IsNumber,
   IsOptional,
   MaxLength,
-} from 'class-validator'
+} from "class-validator"
+import { Field, Int, ObjectType } from "type-graphql"
 
-import ModifiedBy from './fields/ModifiedBy'
-import Node from './Node'
-import { SubscriptionPlanConnection } from './SubscriptionPlan'
-import UserSettings from './fields/UserSettings'
+import ModifiedBy from "./fields/ModifiedBy"
+import UserSettings from "./fields/UserSettings"
+import Node from "./Node"
+import { SubscriptionPlanConnection } from "./SubscriptionPlan"
 
-@ObjectType({ description: 'The user model', implements: Node })
+@ObjectType({ description: "The user model", implements: Node })
 export default class User extends Node {
   @Field()
   @IsDefined()

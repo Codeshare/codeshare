@@ -1,59 +1,62 @@
-import { rateLimit } from './../utils/rateLimit'
-import logger from '@codeshare/log'
-import 'reflect-metadata'
-import AppError from '~/helpers/AppError'
-import r from 'rethinkdb'
-import { createToken } from '~/models/redisTokenAuths'
-import { emailsModel, Row as EmailRow } from '~/models/emails'
-import { RegisteredUserRow, UserRow } from '../models/users'
-import { ResolverContextType } from './getContext'
-import { usersModel, UserModel } from '~/models/users'
-import { subscriptionPlansModel } from '~/models/subscriptionPlans'
+import logger from "@codeshare/log"
+
+import "reflect-metadata"
+
+import rateLimit from "@/app/-/api/graphql/middleware/rateLimit"
+import { codesharesModel } from "@/app/-/api/graphql/models/codeshares"
+import { anonUsersModel } from "@/app/-/api/graphql/models/redisAnonUsers"
+import { tokenAuthsModel } from "@/app/-/api/graphql/models/redisTokenAuths"
+import { RegisteredUserRow, UserRow } from "@/app/-/api/graphql/models/users"
+import idUtils from "@codeshare/id-utils"
+import { redisClient } from "~/clients/redisClient"
+import { Row as EmailRow, emailsModel } from "~/models/emails"
+import { createToken } from "~/models/redisTokenAuths"
+import { subscriptionPlansModel } from "~/models/subscriptionPlans"
+import comparePassword from "~/utils/comparePassword"
+import hashPassword from "~/utils/hashPassword"
+import { withFilter } from "apollo-server"
+import { GraphQLResolveInfo } from "graphql"
+import RedisPubSubEngine from "graphql-ioredis-subscriptions"
+import { ignoreStatus } from "ignore-errors"
+import r from "rethinkdb"
+import { obj } from "through2"
 import {
-  Resolver,
   Arg,
   Ctx,
-  Root,
-  FieldResolver,
-  Query,
-  Mutation,
-  InputType,
   Field,
-  ObjectType,
-  Subscription,
-  ResolverFilterData,
-  Info,
-  PubSub,
-  Publisher,
+  FieldResolver,
   ID,
+  Info,
+  InputType,
   Int,
-  UseMiddleware,
+  Mutation,
+  ObjectType,
+  Publisher,
+  PubSub,
   PubSubEngine,
-} from 'type-graphql'
-import hashPassword from '~/utils/hashPassword'
-import comparePassword from '~/utils/comparePassword'
-import idUtils from '@codeshare/id-utils'
-import { codesharesModel } from '../models/codeshares'
-import { CodeshareConnection } from './nodes/Me'
+  Query,
+  Resolver,
+  ResolverFilterData,
+  Root,
+  Subscription,
+  UseMiddleware,
+} from "type-graphql"
 
-import Me from './nodes/Me'
-import Codeshare from './nodes/Codeshare'
-import { GraphQLResolveInfo } from 'graphql'
-import Viewer from './nodes/Viewer'
-import UserSettings from './fields/UserSettings'
-import { ignoreStatus } from 'ignore-errors'
-import { tokenAuthsModel } from '../models/redisTokenAuths'
-import { anonUsersModel } from '../models/redisAnonUsers'
-import { redisClient } from '~/clients/redisClient'
-import { withFilter } from 'apollo-server'
-import RedisPubSubEngine from 'graphql-ioredis-subscriptions'
-import { obj } from 'through2'
+import pubSub from "@/lib/clients/pubSub"
+import AppError from "@/lib/common/AppError"
+import usersModel, { UsersModel } from "@/lib/models/usersModel"
+
+import UserSettings from "./fields/UserSettings"
+import { type ResolverContextType } from "./getContext"
+import Codeshare from "./nodes/Codeshare"
+import Me, { CodeshareConnection } from "./nodes/Me"
+import Viewer from "./nodes/Viewer"
 
 /**
  * Subscription Topics & Payloads
  */
 enum topics {
-  UPDATED_ME = 'UPDATED_ME',
+  UPDATED_ME = "UPDATED_ME",
 }
 interface MeUpdatesPayload {
   me: UserJSON
@@ -64,7 +67,7 @@ interface MeUpdatesResult {
   }
 }
 
-type UserJSON = Omit<UserRow, 'createdAt' | 'modifiedAt'> & {
+type UserJSON = Omit<UserRow, "createdAt" | "modifiedAt"> & {
   createdAt: string
   modifiedAt: string
 }
@@ -158,7 +161,7 @@ export class AuthResponse {
 }
 
 function hasSomeKeys(val: unknown): boolean {
-  if (typeof val !== 'object' || val === null) return false
+  if (typeof val !== "object" || val === null) return false
   const obj: Record<string, unknown> = val as Record<string, unknown>
 
   for (const key in obj) {
@@ -177,13 +180,16 @@ export default class MeResolver {
    * Queries
    */
   @Query(() => Me)
-  @UseMiddleware(rateLimit('me', 60))
+  @UseMiddleware(rateLimit("me", { limit: 60, duration: "1m" }))
   async me(@Ctx() ctx: ResolverContextType) {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
-    const me = await usersModel.getOne('id', ctx.me.id)
-    if (!me) {
-      throw new AppError("'me' not found", { status: 404, id: ctx.me.id })
-    }
+    AppError.assertWithStatus(ctx.me != null, 401, "not authenticated")
+
+    const me = await usersModel.getOne("id", ctx.me.id)
+
+    AppError.assertWithStatus(me != null, 404, "'me' not found", {
+      id: ctx.me.id,
+    })
+
     return me
   }
 
@@ -192,12 +198,12 @@ export default class MeResolver {
    */
 
   @Mutation(() => ViewerResponse)
-  @UseMiddleware(rateLimit('updateMe', 60))
+  @UseMiddleware(rateLimit("updateMe", { limit: 60, duration: "1m" }))
   async updateMe(
-    @Arg('input')
+    @Arg("input")
     {
       name,
-      email: _email,
+      email,
       password,
       settings,
       defaultCodeshareSettings,
@@ -207,23 +213,29 @@ export default class MeResolver {
     // @PubSub(topics.UPDATED_ME)
     // notify: Publisher<MeUpdatesPayload>,
   ): Promise<ViewerResponse> {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
+    AppError.assertWithStatus(ctx.me != null, 401)
 
     // ensure email is lowercase
-    const lowerEmail = _email?.toLowerCase()
+    const lowerEmail = email?.toLowerCase()
 
-    const allUserUpdateData = {
-      ...(settings == null ? {} : { settings }),
-    }
-    const registeredUserUpdateData = {
-      ...(name == null ? {} : { name }),
-      ...(lowerEmail == null ? {} : { email: lowerEmail }),
-      ...(password == null ? {} : { password }),
-    }
-    const proUserUpdateData = {
-      ...(defaultCodeshareSettings == null ? {} : { defaultCodeshareSettings }),
-      ...(companyImage == null ? {} : { companyImage }),
-    }
+    const allUserUpdateData = Object.fromEntries(
+      Object.entries({
+        settings,
+      }).filter(([_, value]) => value != null),
+    )
+    const registeredUserUpdateData = Object.fromEntries(
+      Object.entries({
+        name,
+        email: lowerEmail,
+        password,
+      }).filter(([_, value]) => value != null),
+    )
+    const proUserUpdateData = Object.fromEntries(
+      Object.entries({
+        defaultCodeshareSettings,
+        companyImage,
+      }).filter(([_, value]) => value != null),
+    )
     const hasAllUserUpdates = hasSomeKeys(allUserUpdateData)
     const hasRegisteredUserUpdates = hasSomeKeys(registeredUserUpdateData)
     const hasProUserUpdates = hasSomeKeys(proUserUpdateData)
@@ -233,44 +245,43 @@ export default class MeResolver {
      * ensure that at least one field is being updated
      */
 
-    if (!hasAllUserUpdates && !hasRegisteredUserUpdates && !hasProUserUpdates) {
-      throw new AppError('missing update data', { status: 400 })
-    }
+    AppError.assertWithStatus(
+      hasAllUserUpdates || hasRegisteredUserUpdates || hasProUserUpdates,
+      400,
+      "missing update data",
+    )
 
     /**
      * Access Control
      * ensure that the user is not trying to update a field that they are not allowed to
      */
 
-    if (hasRegisteredUserUpdates && ctx.me.anonymous) {
-      throw new AppError(
-        'anonymous users cannot update name, email, or password',
-        {
-          status: 403,
-        },
+    if (hasRegisteredUserUpdates) {
+      AppError.assertWithStatus(
+        !ctx.me.anonymous,
+        403,
+        "anonymous users cannot update name, email, or password",
       )
     }
     if (hasProUserUpdates) {
       // check if user is pro
       const plan = await subscriptionPlansModel.getOne(
-        'createdBy.userId',
+        "createdBy.userId",
         ctx.me.id,
       )
       // check if pro plan exists
-      AppError.assert(
+      AppError.assertWithStatus(
         plan != null,
-        'cannot set default codeshare settings without pro plan',
-        {
-          status: 403,
-        },
+        403,
+        "cannot set default codeshare settings without pro plan",
       )
       // check if pro plan is not expired
-      AppError.assert(
+      AppError.assertWithStatus(
         plan.expiresAt > new Date(),
-        'cannot set default codeshare settings without renewing pro plan',
+        403,
+        "cannot set default codeshare settings without renewing pro plan",
         {
-          status: 403,
-          code: 'EXPIRED_SUBSCRIBER',
+          errorCode: "EXPIRED_SUBSCRIBER",
         },
       )
     }
@@ -280,45 +291,7 @@ export default class MeResolver {
      * validate email address
      */
 
-    if (lowerEmail) {
-      let emailRow: EmailRow | null = (await emailsModel
-        .insert({
-          id: lowerEmail,
-          createdAt: new Date(),
-          createdBy: {
-            clientId: ctx.clientId,
-            userId: ctx.me.id,
-          },
-        })
-        .catch(ignoreStatus(409))) as EmailRow | null
-
-      if (emailRow == null) {
-        // email not inserted, get existing
-        emailRow = await emailsModel.getOne('id', lowerEmail)
-
-        if (emailRow == null) {
-          // conflict email not found... weird, but just error
-          throw new AppError('"email" already exists', { status: 409 })
-        }
-        if (emailRow.createdBy.userId !== ctx.me.id) {
-          // conflict email is not the current user's email
-          throw new AppError('"email" already exists', {
-            status: 409,
-            emailRow,
-          })
-        }
-        // conflict email is the current user's email... do nothing
-      } else {
-        // email updated, delete any old emails
-        await emailsModel.deleteBetween('createdBy.userIdAndCreatedAt', [
-          // @ts-ignore
-          [ctx.me.id, r.minval],
-          [ctx.me.id, emailRow.createdAt],
-        ])
-      }
-    }
-
-    const me = await usersModel.updateOne('id', ctx.me.id, {
+    const me = await usersModel.updateOne("id", ctx.me.id, {
       ...allUserUpdateData,
       ...registeredUserUpdateData,
       ...proUserUpdateData,
@@ -328,13 +301,13 @@ export default class MeResolver {
         userId: ctx.me.id,
       },
     })
+    // TODO: 409 email already exists error message..
+
     ctx.me = me as Me
-    await (redisClient.pubSub as RedisPubSubEngine<MeUpdatesPayload>).publish(
-      `${topics.UPDATED_ME}:${ctx.me.id}`,
-      {
-        me: toJSON(me),
-      },
-    )
+
+    await pubSub.publish<MeUpdatesPayload>(`${topics.UPDATED_ME}:${me.id}`, {
+      me: toJSON(me),
+    })
 
     return { viewer: { me: me as Me } }
   }
@@ -363,7 +336,7 @@ export default class MeResolver {
         args: { input: MeUpdatesInput },
         ctx: ResolverContextType,
       ) => {
-        AppError.assert(ctx.me, 'not authenticated', { status: 401 })
+        AppError.assert(ctx.me, "not authenticated", { status: 401 })
         return redisClient.pubSub.asyncIterator<MeUpdatesPayload>(
           `${topics.UPDATED_ME}:${ctx.me.id}`,
         )
@@ -376,7 +349,7 @@ export default class MeResolver {
         if (payload.me.modifiedBy.clientId === ctx.clientId) {
           return false
         }
-        logger.debug('UPDATED_ME:filter:', {
+        logger.debug("UPDATED_ME:filter:", {
           payload,
         })
         return true
@@ -385,7 +358,7 @@ export default class MeResolver {
   })
   async meUpdates(
     @Root() payload: MeUpdatesPayload,
-    @Arg('input') input: MeUpdatesInput,
+    @Arg("input") input: MeUpdatesInput,
   ): Promise<MeUpdatesResult> {
     return { viewer: { me: castDates(payload.me) } }
   }
@@ -394,262 +367,169 @@ export default class MeResolver {
    * Authentication Mutations
    */
 
-  @Mutation(() => AuthResponse)
-  @UseMiddleware(rateLimit('login', 30))
-  async login(
-    @Arg('input') { email, password }: LoginInput,
-    @Ctx() ctx: ResolverContextType,
-  ): Promise<AuthResponse> {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
-    if (!ctx.me.anonymous) {
-      throw new AppError('already logged in', {
-        status: 409,
-        userId: ctx.me.id,
-      })
-    }
-    const oldMe = ctx.me
+  // @Mutation(() => AuthResponse)
+  // @UseMiddleware(rateLimit('deleteMe', 30))
+  // async deleteMe(
+  //   @Arg('input') input: DeleteMeInput,
+  //   @Ctx() ctx: ResolverContextType,
+  // ): Promise<AuthResponse> {
+  //   if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
+  //   if (ctx.me.anonymous) {
+  //     // anon user to delete
+  //     return {
+  //       viewer: { me: ctx.me },
+  //       token: ctx.token,
+  //     }
+  //   }
+  //   await Promise.all([
+  //     usersModel.deleteOne('id', ctx.me.id),
+  //     codesharesModel.deleteAll('createdBy.userId', ctx.me.id),
+  //     emailsModel.deleteAll('createdBy.userId', ctx.me.id),
+  //     tokenAuthsModel.deleteOneByToken(ctx.token),
+  //   ])
+  //   // TODO: disconnect socket?
+  //   ctx.me = null
+  //   return this.registerAnonymous(ctx, {})
+  // }
 
-    // find email
-    const emailRow = await emailsModel.getOne('id', email)
-    if (!emailRow) {
-      throw new AppError('invalid login', {
-        status: 404,
-        email,
-        code: 'email not found',
-      })
-    }
-    // find user with email
-    const userRow = await usersModel.getOne('id', emailRow.createdBy.userId)
-    if (!userRow)
-      throw new AppError(
-        'Your account is inactive. Please reset your password.',
-        { status: 500, email },
-      )
-    // verify password
-    const registeredUserRow = userRow as RegisteredUserRow
-    const passwordIsCorrect = await comparePassword(
-      password,
-      registeredUserRow.password,
-    )
-    if (!passwordIsCorrect) {
-      throw new AppError('invalid login', {
-        status: 404,
-        email,
-        code: 'invalid password',
-      })
-    }
-    // create new authorization token
-    const token = await createToken(ctx.clientId, registeredUserRow.id)
-    // find user with email
-    await usersModel.incLoginCount('id', emailRow.createdBy.userId, {
-      modifiedAt: new Date(),
-      modifiedBy: {
-        clientId: ctx.clientId,
-        userId: ctx.me.id,
-      },
-    })
-    registeredUserRow.loginCount++
-    const me = userRow as Me
+  // @Mutation(() => AuthResponse)
+  // @UseMiddleware(rateLimit('logout', 30))
+  // async logout(
+  //   @Arg('input') input: LogoutInput,
+  //   @Ctx() ctx: ResolverContextType,
+  // ): Promise<AuthResponse> {
+  //   if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
+  //   if (ctx.me.anonymous) {
+  //     // anon user no need to logout
+  //     return {
+  //       viewer: { me: ctx.me },
+  //       token: ctx.token,
+  //     }
+  //   }
+  //   // TODO: disconnect socket?
+  //   ctx.me = null
+  //   const [auth] = await Promise.all([
+  //     this.registerAnonymous(ctx, {}),
+  //     // delete old auth only, user is not anon.. they are authed and logging out
+  //     tokenAuthsModel.deleteOneByToken(ctx.token),
+  //   ])
 
-    // delete old anon user and token
-    await Promise.all<unknown>([
-      tokenAuthsModel.deleteOneByToken(ctx.token),
-      // delete anon user
-      usersModel.deleteOne('id', oldMe.id),
-    ])
+  //   return auth
+  // }
 
-    return {
-      viewer: { me },
-      token,
-    }
-  }
+  // @Mutation(() => AuthResponse)
+  // @UseMiddleware(rateLimit('register', 30))
+  // async register(
+  //   @Arg('input')
+  //   { email, password, name, settings, clientMutationId }: RegisterInput,
+  //   @Ctx() ctx: ResolverContextType,
+  //   // @PubSub(topics.UPDATED_ME)
+  //   // notify: Publisher<MeUpdatesPayload>,
+  // ): Promise<AuthResponse> {
+  //   if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
+  //   if (!ctx.me.anonymous) {
+  //     throw new AppError('already registered', {
+  //       status: 409,
+  //       email,
+  //       clientId: ctx.clientId,
+  //       userId: ctx.me.id,
+  //     })
+  //   }
+  //   const registeredUserId = UserModel.removeAnonNamespace(ctx.me.id)
+  //   // register email address
+  //   try {
+  //     await emailsModel.insert({
+  //       id: email.toLowerCase(),
+  //       createdAt: new Date(),
+  //       createdBy: {
+  //         clientId: ctx.clientId,
+  //         userId: registeredUserId,
+  //       },
+  //     })
+  //   } catch (e) {
+  //     const err = e as AppError
+  //     if (err.status === 409) {
+  //       try {
+  //         return await this.login({ email, password }, ctx)
+  //       } catch (e) {
+  //         const err = e as AppError
+  //         throw AppError.wrap(err, 'user with email already exists', {
+  //           status: 409,
+  //           email,
+  //           clientId: ctx.clientId,
+  //           userId: ctx.me.id,
+  //         })
+  //       }
+  //     }
+  //   }
+  //   // update anon user to registered user
+  //   const settingsUpdates = settings == null ? {} : { settings }
+  //   const hashedPassword = await hashPassword(password)
+  //   let me
+  //   if (UserModel.isAnonId(ctx.me.id)) {
+  //     me = await usersModel.insert({
+  //       id: registeredUserId,
+  //       anonymous: false,
+  //       name,
+  //       password: hashedPassword,
+  //       loginCount: 1,
+  //       ...settingsUpdates,
+  //       createdAt: ctx.me.createdAt,
+  //       modifiedAt: new Date(),
+  //       modifiedBy: {
+  //         clientId: ctx.clientId,
+  //         userId: ctx.me.id,
+  //       },
+  //     })
+  //     // migrate anon created codeshares
+  //     codesharesModel.migrate(ctx.me.id, {
+  //       createdBy: {
+  //         clientId: ctx.clientId,
+  //         userId: me.id, // registered id
+  //       },
+  //       modifiedAt: new Date(),
+  //       modifiedBy: {
+  //         clientId: ctx.clientId,
+  //         userId: ctx.me.id,
+  //       },
+  //     })
+  //   } else {
+  //     logger.error('unexpected rethinkdb user registration', {
+  //       err: new AppError<{ userId: string }>(
+  //         'unexpected rethinkdb user registration',
+  //         {
+  //           status: 500,
+  //           userId: ctx.me.id,
+  //         },
+  //       ),
+  //     })
+  //     me = await usersModel.updateOne('id', ctx.me.id, {
+  //       anonymous: false,
+  //       name,
+  //       password: hashedPassword,
+  //       loginCount: 1,
+  //       modifiedAt: new Date(),
+  //       modifiedBy: {
+  //         clientId: ctx.clientId,
+  //         userId: ctx.me.id,
+  //       },
+  //     })
+  //   }
 
-  @Mutation(() => AuthResponse)
-  @UseMiddleware(rateLimit('deleteMe', 30))
-  async deleteMe(
-    @Arg('input') input: DeleteMeInput,
-    @Ctx() ctx: ResolverContextType,
-  ): Promise<AuthResponse> {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
-    if (ctx.me.anonymous) {
-      // anon user to delete
-      return {
-        viewer: { me: ctx.me },
-        token: ctx.token,
-      }
-    }
-    await Promise.all([
-      usersModel.deleteOne('id', ctx.me.id),
-      codesharesModel.deleteAll('createdBy.userId', ctx.me.id),
-      emailsModel.deleteAll('createdBy.userId', ctx.me.id),
-      tokenAuthsModel.deleteOneByToken(ctx.token),
-    ])
-    // TODO: disconnect socket?
-    ctx.me = null
-    return this.registerAnonymous(ctx, {})
-  }
+  //   // create new authorization token
+  //   const token = await createToken(ctx.clientId, me.id)
+  //   await (redisClient.pubSub as RedisPubSubEngine<MeUpdatesPayload>).publish(
+  //     `${topics.UPDATED_ME}:${ctx.me.id}`,
+  //     {
+  //       me: toJSON(me),
+  //     },
+  //   )
 
-  @Mutation(() => AuthResponse)
-  @UseMiddleware(rateLimit('logout', 30))
-  async logout(
-    @Arg('input') input: LogoutInput,
-    @Ctx() ctx: ResolverContextType,
-  ): Promise<AuthResponse> {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
-    if (ctx.me.anonymous) {
-      // anon user no need to logout
-      return {
-        viewer: { me: ctx.me },
-        token: ctx.token,
-      }
-    }
-    // TODO: disconnect socket?
-    ctx.me = null
-    const [auth] = await Promise.all([
-      this.registerAnonymous(ctx, {}),
-      // delete old auth only, user is not anon.. they are authed and logging out
-      tokenAuthsModel.deleteOneByToken(ctx.token),
-    ])
-
-    return auth
-  }
-
-  @Mutation(() => AuthResponse)
-  @UseMiddleware(rateLimit('register', 30))
-  async register(
-    @Arg('input')
-    { email, password, name, settings, clientMutationId }: RegisterInput,
-    @Ctx() ctx: ResolverContextType,
-    // @PubSub(topics.UPDATED_ME)
-    // notify: Publisher<MeUpdatesPayload>,
-  ): Promise<AuthResponse> {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
-    if (!ctx.me.anonymous) {
-      throw new AppError('already registered', {
-        status: 409,
-        email,
-        clientId: ctx.clientId,
-        userId: ctx.me.id,
-      })
-    }
-    const registeredUserId = UserModel.removeAnonNamespace(ctx.me.id)
-    // register email address
-    try {
-      await emailsModel.insert({
-        id: email.toLowerCase(),
-        createdAt: new Date(),
-        createdBy: {
-          clientId: ctx.clientId,
-          userId: registeredUserId,
-        },
-      })
-    } catch (e) {
-      const err = e as AppError
-      if (err.status === 409) {
-        try {
-          return await this.login({ email, password }, ctx)
-        } catch (e) {
-          const err = e as AppError
-          throw AppError.wrap(err, 'user with email already exists', {
-            status: 409,
-            email,
-            clientId: ctx.clientId,
-            userId: ctx.me.id,
-          })
-        }
-      }
-    }
-    // update anon user to registered user
-    const settingsUpdates = settings == null ? {} : { settings }
-    const hashedPassword = await hashPassword(password)
-    let me
-    if (UserModel.isAnonId(ctx.me.id)) {
-      me = await usersModel.insert({
-        id: registeredUserId,
-        anonymous: false,
-        name,
-        password: hashedPassword,
-        loginCount: 1,
-        ...settingsUpdates,
-        createdAt: ctx.me.createdAt,
-        modifiedAt: new Date(),
-        modifiedBy: {
-          clientId: ctx.clientId,
-          userId: ctx.me.id,
-        },
-      })
-      // migrate anon created codeshares
-      codesharesModel.migrate(ctx.me.id, {
-        createdBy: {
-          clientId: ctx.clientId,
-          userId: me.id, // registered id
-        },
-        modifiedAt: new Date(),
-        modifiedBy: {
-          clientId: ctx.clientId,
-          userId: ctx.me.id,
-        },
-      })
-    } else {
-      logger.error('unexpected rethinkdb user registration', {
-        err: new AppError<{ userId: string }>(
-          'unexpected rethinkdb user registration',
-          {
-            status: 500,
-            userId: ctx.me.id,
-          },
-        ),
-      })
-      me = await usersModel.updateOne('id', ctx.me.id, {
-        anonymous: false,
-        name,
-        password: hashedPassword,
-        loginCount: 1,
-        modifiedAt: new Date(),
-        modifiedBy: {
-          clientId: ctx.clientId,
-          userId: ctx.me.id,
-        },
-      })
-    }
-
-    // create new authorization token
-    const token = await createToken(ctx.clientId, me.id)
-    await (redisClient.pubSub as RedisPubSubEngine<MeUpdatesPayload>).publish(
-      `${topics.UPDATED_ME}:${ctx.me.id}`,
-      {
-        me: toJSON(me),
-      },
-    )
-
-    return {
-      viewer: { me: me as Me },
-      token,
-    }
-  }
-
-  @Mutation(() => AuthResponse)
-  @UseMiddleware(rateLimit('registerAnonymous', 30))
-  async registerAnonymous(
-    @Ctx() ctx: ResolverContextType,
-    @Arg('input') input: RegisterAnonymousInput,
-  ): Promise<AuthResponse> {
-    if (ctx.me) throw new AppError('already authenticated', { status: 400 })
-
-    const userId = UserModel.genAnonId()
-    // create new authorization token
-    const token = await createToken(ctx.clientId, userId)
-    // register anon user
-    const me = await anonUsersModel.upsert({
-      id: userId,
-      token: token,
-    })
-
-    return {
-      viewer: { me: me as Me },
-      token,
-    }
-  }
+  //   return {
+  //     viewer: { me: me as Me },
+  //     token,
+  //   }
+  // }
 
   /**
    * FieldResolvers
@@ -657,22 +537,22 @@ export default class MeResolver {
 
   @FieldResolver(() => ID)
   id(@Root() root: Me) {
-    return idUtils.encodeRelayId('Me', root.id)
+    return idUtils.encodeRelayId("Me", root.id)
   }
 
   @FieldResolver(() => CodeshareConnection)
   async codesharesCreated(
     @Root() user: Me,
-    @Arg('first', () => Int!) first: number,
-    @Arg('after', { nullable: true }) after?: string,
+    @Arg("first", () => Int!) first: number,
+    @Arg("after", { nullable: true }) after?: string,
   ): Promise<CodeshareConnection> {
     const signal = new AbortController().signal
-    logger.debug('codesharesCreated', { first, after })
+    logger.debug("codesharesCreated", { first, after })
     const afterIndex = after ? new Date(idUtils.decodeRelayConnId(after)) : null
     // TODO: validate date
     const [rows, count] = await Promise.all([
       codesharesModel.getBetween(
-        r.desc('createdBy.userIdAndModifiedAt'),
+        r.desc("createdBy.userIdAndModifiedAt"),
         // @ts-ignore
         [
           // @ts-ignore
@@ -687,22 +567,22 @@ export default class MeResolver {
           signal,
         },
       ),
-      codesharesModel.countAll('createdBy.userId', user.id, {
+      codesharesModel.countAll("createdBy.userId", user.id, {
         signal,
       }),
     ])
 
     const edges = []
-    for await (let row of rows) {
+    for await (const row of rows) {
       edges.push({
-        node: ({
+        node: {
           ...row,
-        } as unknown) as Codeshare,
+        } as unknown as Codeshare,
         cursor: idUtils.encodeRelayConnId(row.modifiedAt.toISOString()),
       })
     }
 
-    let hasNextPage = edges.length > first
+    const hasNextPage = edges.length > first
     if (hasNextPage) {
       edges.pop()
     }

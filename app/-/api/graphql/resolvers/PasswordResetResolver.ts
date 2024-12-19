@@ -1,30 +1,34 @@
-import { rateLimit } from './../utils/rateLimit'
-import { AuthResponse } from './MeResolver'
-import { createToken } from '~/models/redisTokenAuths'
-import hashPassword from '~/utils/hashPassword'
-import { usersModel } from '~/models/users'
-import { emailClient } from './../clients/emailClient'
-import 'reflect-metadata'
-import { passwordResetsModel, getExpiresAt } from '~/models/passwordResets'
+import { createToken } from "~/models/redisTokenAuths"
+import { usersModel } from "~/models/users"
+import hashPassword from "~/utils/hashPassword"
+
+import { emailClient } from "./../clients/emailClient"
+import { rateLimit } from "./../utils/rateLimit"
+import { AuthResponse } from "./MeResolver"
+
+import "reflect-metadata"
+
+import logger from "@codeshare/log"
+import AppError from "~/helpers/AppError"
+import { emailsModel } from "~/models/emails"
+import { getExpiresAt, passwordResetsModel } from "~/models/passwordResets"
+import { decodeJWT, insecureDecodeJWT } from "~/utils/decodeJWT"
+import { encodeJWT } from "~/utils/encodeJWT"
+import generateSecret from "~/utils/generateSecret"
+import { ignoreStatus } from "ignore-errors"
 import {
   Arg,
   Ctx,
-  Mutation,
-  Resolver,
-  ObjectType,
   Field,
   InputType,
+  Mutation,
+  ObjectType,
+  Resolver,
   UseMiddleware,
-} from 'type-graphql'
-import AppError from '~/helpers/AppError'
-import { ResolverContextType } from './getContext'
-import { encodeJWT } from '~/utils/encodeJWT'
-import generateSecret from '~/utils/generateSecret'
-import { insecureDecodeJWT, decodeJWT } from '~/utils/decodeJWT'
-import { emailsModel } from '~/models/emails'
-import Me from './nodes/Me'
-import { ignoreStatus } from 'ignore-errors'
-import logger from '@codeshare/log'
+} from "type-graphql"
+
+import { ResolverContextType } from "./getContext"
+import Me from "./nodes/Me"
 
 @InputType()
 class SendPasswordResetInput {
@@ -49,28 +53,28 @@ class UsePasswordResetInput {
 @ObjectType()
 class SendPasswordResetResponse {
   @Field()
-  sent!: Boolean
+  sent!: boolean
 }
 
 @Resolver()
 export default class PasswordResetResolver {
   @Mutation(() => SendPasswordResetResponse)
-  @UseMiddleware(rateLimit('sendPasswordReset', 30))
+  @UseMiddleware(rateLimit("sendPasswordReset", 30))
   async sendPasswordReset(
-    @Arg('input') { email }: SendPasswordResetInput,
+    @Arg("input") { email }: SendPasswordResetInput,
     @Ctx() ctx: ResolverContextType,
   ) {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
+    if (!ctx.me) throw new AppError("not authenticated", { status: 401 })
     if (!ctx.me.anonymous) {
-      throw new AppError('already logged in', {
+      throw new AppError("already logged in", {
         status: 409,
         clientId: ctx.clientId,
         userId: ctx.me.id,
       })
     }
-    const emailRow = await emailsModel.getOne('id', email)
+    const emailRow = await emailsModel.getOne("id", email)
     if (!emailRow) {
-      throw new AppError<{ email: string }>('user with email not found', {
+      throw new AppError<{ email: string }>("user with email not found", {
         email,
         status: 404,
       })
@@ -98,23 +102,23 @@ export default class PasswordResetResolver {
   }
 
   @Mutation(() => AuthResponse)
-  @UseMiddleware(rateLimit('usePasswordReset', 30))
+  @UseMiddleware(rateLimit("usePasswordReset", 30))
   async usePasswordReset(
-    @Arg('input') { email, resetToken, newPassword }: UsePasswordResetInput,
+    @Arg("input") { email, resetToken, newPassword }: UsePasswordResetInput,
     @Ctx() ctx: ResolverContextType,
   ): Promise<AuthResponse> {
-    if (!ctx.me) throw new AppError('not authenticated', { status: 401 })
+    if (!ctx.me) throw new AppError("not authenticated", { status: 401 })
     if (!ctx.me.anonymous) {
-      throw new AppError('already logged in', {
+      throw new AppError("already logged in", {
         status: 409,
         clientId: ctx.clientId,
         userId: ctx.me.id,
       })
     }
     const payload = insecureDecodeJWT(resetToken)
-    const passwordResetRow = await passwordResetsModel.getOne('id', payload.id)
+    const passwordResetRow = await passwordResetsModel.getOne("id", payload.id)
     if (!passwordResetRow) {
-      throw new AppError('token is invalid or expired', {
+      throw new AppError("token is invalid or expired", {
         status: 401,
         resetToken,
         clientId: ctx.clientId,
@@ -126,23 +130,23 @@ export default class PasswordResetResolver {
       decodeJWT(resetToken, secret)
     } catch (e) {
       const err = e as Error
-      throw AppError.wrap(err, 'token is invalid or expired', {
+      throw AppError.wrap(err, "token is invalid or expired", {
         status: 401,
         resetToken,
         clientId: ctx.clientId,
         userId: ctx.me.id,
       })
     }
-    const emailRow = await emailsModel.getOne('id', email)
+    const emailRow = await emailsModel.getOne("id", email)
     if (!emailRow) {
-      throw new AppError<{ email: string }>('user with email not found', {
+      throw new AppError<{ email: string }>("user with email not found", {
         email,
         status: 404,
       })
     }
     const hashedPassword = await hashPassword(newPassword)
     let me = await usersModel
-      .updateOne('id', emailRow.createdBy.userId, {
+      .updateOne("id", emailRow.createdBy.userId, {
         password: hashedPassword,
         modifiedAt: new Date(),
         modifiedBy: {
@@ -153,7 +157,7 @@ export default class PasswordResetResolver {
       .catch(ignoreStatus(404))
     if (me == null) {
       // legacy deleted user, restore it
-      logger.debug('restore legacy user', { emailRow })
+      logger.debug("restore legacy user", { emailRow })
       try {
         me = await usersModel.insert({
           id: emailRow.createdBy.userId,
@@ -164,14 +168,14 @@ export default class PasswordResetResolver {
           createdAt: emailRow.createdAt,
           modifiedAt: new Date(),
           modifiedBy: {
-            clientId: 'password-reset-restored',
+            clientId: "password-reset-restored",
             userId: ctx.me.id,
           },
         })
       } catch (err) {
         throw AppError.wrap(
           err as Error,
-          'Inactive account could not be restored. Please contact support: hello@codeshare.io',
+          "Inactive account could not be restored. Please contact support: hello@codeshare.io",
           {
             email,
             status: 500,

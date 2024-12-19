@@ -1,13 +1,13 @@
-import 'reflect-metadata'
+import "reflect-metadata"
 
-import { Field, ObjectType } from 'type-graphql'
+import { IsDate, IsDefined, IsOptional, MaxLength } from "class-validator"
+import GraphQLFirepadTextOperation from "graphql-firepad-text-operation"
+import { Field, ObjectType } from "type-graphql"
 
-import Connection from './fields/Connection'
-import CreatedBy from './fields/CreatedBy'
-import Edge from './fields/Edge'
-import GraphQLFirepadTextOperation from 'graphql-firepad-text-operation'
-import Node from './Node'
-import { IsDate, IsDefined, IsOptional, MaxLength } from 'class-validator'
+import Connection from "./fields/Connection"
+import CreatedBy from "./fields/CreatedBy"
+import Edge from "./fields/Edge"
+import Node from "./Node"
 
 export type TextOperationType = Array<string | number>
 

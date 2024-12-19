@@ -1,46 +1,26 @@
-import { Generated, Selectable, sql } from "kysely"
+import bcrypt from "bcrypt"
+import {
+  InsertObject,
+  Selectable,
+  SelectExpression,
+  Selection,
+  sql,
+} from "kysely"
+
+import pg, { CodeshareDB } from "@/lib/clients/postgres/postgres"
 import PostgresModel, {
   PostgresModelError,
   PostgresModelErrorProps,
   PostgresOptsType,
-} from "@/lib/models/pg/PostgresModel"
-import pg, { CodeshareDB } from "@/lib/clients/postgres"
-import { InsertObject } from "kysely"
-import { SelectExpression, Selection } from "kysely"
-import bcrypt from "bcrypt"
+} from "@/lib/clients/postgres/PostgresModel"
+import UserSchema from "@/lib/clients/postgres/schemas/user"
+import ExactOmit from "@/lib/typeHelpers/ExactOmit"
 
 export class UsersModelError<
   Props extends PostgresModelErrorProps,
 > extends PostgresModelError<Props> {}
 
-export interface UsersTable {
-  id: Generated<string> // TODO: how to uuid?
-  // anonymous: false
-  createdAt: Date
-  email: string // TODO: new field! unique index (only if verified?)
-  // cleanedAt?: Date
-  loginCount: number // TODO: incrementing?
-  modifiedAt: Date
-  modifiedBy: {
-    userId: string
-    clientId: string
-  }
-  password: string | null
-
-  // optional
-  emailVerified: Date | null
-  name: string | null
-  settings: {
-    keymap?: string
-    theme?: string
-  } | null
-  defaultCodeshareSettings: {
-    modeName?: string // syntax
-    tabSize?: string
-  } | null
-  // companyImage?: string
-  // stripeCustomerId?: string
-}
+export type UsersTable = UserSchema
 export type UserRow = Selectable<UsersTable>
 export type UserIndexes = Partial<Pick<UsersTable, "id" | "email">>
 export type UserIndex = keyof UserIndexes
@@ -53,7 +33,7 @@ export class UsersModel extends PostgresModel<
   CodeshareDB,
   "users",
   UserIndex,
-  Omit<InsertObject<CodeshareDB, "users">, "id">
+  ExactOmit<InsertObject<CodeshareDB, "users">, "id">
 > {
   constructor() {
     super(pg, "users", ModelError)
@@ -71,12 +51,12 @@ export class UsersModel extends PostgresModel<
   }
 
   async insert<
-    InsertData extends Omit<InsertObject<CodeshareDB, "users">, "id">,
+    InsertData extends ExactOmit<InsertObject<CodeshareDB, "users">, "id">,
     SE extends SelectExpression<CodeshareDB, "users">,
     S extends Selection<CodeshareDB, "users", SE>,
   >(
     data: InsertData,
-    opts?: Omit<PostgresOptsType<SE, never>, "page">,
+    opts?: ExactOmit<PostgresOptsType<SE, never>, "page">,
   ): Promise<S> {
     return super.insert(data, opts)
   }
