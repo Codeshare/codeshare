@@ -11,6 +11,9 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useUnknownInCatchVariables": false,
     "jsx": "preserve",
     "incremental": true,
     "plugins": [
@@ -18,7 +21,9 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
+      // CAUTION: this is mirrored in eslint.config.mjs
       "@/*": ["./*"]
     }
   },
