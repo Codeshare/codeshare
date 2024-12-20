@@ -12,7 +12,7 @@ dependencies:
     specifier: ^3.2.0
     version: 3.2.0(@apollo/server@4.11.2)(next@15.1.0)
   '@codeshare/log':
-    specifier: git+https://github.com/codeshare/log.git
+    specifier: github:codeshare/log
     version: github.com/codeshare/log/e52c8469dd9a6bcb96f22792276e8f1bcb89dc2f
   '@radix-ui/react-label':
     specifier: ^2.1.1
