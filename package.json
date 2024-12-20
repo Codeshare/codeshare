@@ -9,7 +9,7 @@
     "lint": "next lint",
     "prepare": "husky",
     "test": "echo pass",
-    "preinstall": "curl -H \"Authorization: token ${GITHUB_TOKEN}\" https://api.github.com/repos/codeshare/log -s -o /dev/null -w '%{http_code}'"
+    "pnpm:devPreinstall": "curl -H \"Authorization: token ${GITHUB_TOKEN}\" https://api.github.com/repos/codeshare/log -s -o /dev/null -w '%{http_code}'"
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
@@ -80,7 +80,7 @@
     "eslint-plugin-relay": "^1.8.3",
     "husky": "^9.1.7",
     "lint-staged": "^15.2.11",
-    "postcss": "^8.0.0",
+    "postcss": "^8.4.49",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "0.6.9",
     "relay-compiler": "^18.2.0",
