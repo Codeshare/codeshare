@@ -9,7 +9,7 @@
     "lint": "next lint",
     "prepare": "husky",
     "test": "echo pass",
-    "pnpm:devPreinstall": "curl -H \"Authorization: token ${GITHUB_TOKEN}\" https://api.github.com/repos/codeshare/log -s -o /dev/null -w '%{http_code}'"
+    "pnpm:devPreinstall": "pnpm --version"
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
@@ -17,7 +17,7 @@
   "dependencies": {
     "@apollo/server": "^4.11.2",
     "@as-integrations/next": "^3.2.0",
-    "@codeshare/log": "git+https://tjmehta:$GITHUB_TOKEN@github.com/codeshare/log.git",
+    "@codeshare/log": "git+https://github.com/codeshare/log.git",
     "@radix-ui/react-label": "^2.1.1",
     "@radix-ui/react-navigation-menu": "^1.2.2",
     "@radix-ui/react-slot": "^1.1.1",
