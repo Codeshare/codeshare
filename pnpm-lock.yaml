@@ -15,8 +15,8 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(@apollo/server@4.11.2(graphql@16.9.0))(next@15.1.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0))
       '@codeshare/log':
-        specifier: git+https://github.com/codeshare/log.git#v4.2.0
-        version: https://codeload.github.com/codeshare/log/tar.gz/8ce163424a90c801604a1bb4b360aa6eef9de9c4
+        specifier: ^4.4.2
+        version: 4.4.2
       '@radix-ui/react-label':
         specifier: ^2.1.1
         version: 2.1.1(@types/react-dom@19.0.0)(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -373,13 +373,11 @@ packages:
     resolution: {integrity: sha512-vN5p+1kl59GVKMvTHt55NzzmYVxprfJD+ql7U9NFIfKCBkYE55LYtS+WtPlaYOyzydrKI8Nezd+aZextrd+FMA==}
     engines: {node: '>=6.9.0'}
 
-  '@codeshare/env@git+https://git@github.com:codeshare/env.git#c6c2f6b7fa3702d585b0fde73ae15d3ab146a6a4':
-    resolution: {commit: c6c2f6b7fa3702d585b0fde73ae15d3ab146a6a4, repo: git@github.com:codeshare/env.git, type: git}
-    version: 2.1.1
+  '@codeshare/env@2.3.3':
+    resolution: {integrity: sha512-x06mOxrXIqefvOKS9qFZ99gGvz/oz/up3nPeR+/wJl1Inct5LS2rkt4WyeSSadOGotyYeETrwvb9FceBA0sPLQ==, tarball: https://npm.pkg.github.com/download/@codeshare/env/2.3.3/9ad2c7b5ca9410ce31112698482c6c1010236023}
 
-  '@codeshare/log@https://codeload.github.com/codeshare/log/tar.gz/8ce163424a90c801604a1bb4b360aa6eef9de9c4':
-    resolution: {tarball: https://codeload.github.com/codeshare/log/tar.gz/8ce163424a90c801604a1bb4b360aa6eef9de9c4}
-    version: 4.2.0
+  '@codeshare/log@4.4.2':
+    resolution: {integrity: sha512-b9D/DJBO2U5e7ItJ2V/vz4ofngEYqIErhEgmCXrzQH7tuMezxFGVCmjeL0fRaqZFeVCH4pMb4VdHgsHH54bkSw==, tarball: https://npm.pkg.github.com/download/@codeshare/log/4.4.2/3e8723abe6554351fbb90b57b4346e294b34e2f8}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -1963,9 +1961,9 @@ packages:
     resolution: {integrity: sha512-tE7ztYzXHIeyvc7N+hR3oi7FIbf/NIjVP9hmAt3yMXzrQ072/fpjGLx2GxNxGxUl5V73MEqYzioOMoVhGMJ5cA==}
     engines: {node: '>=10'}
 
-  dotenv@8.6.0:
-    resolution: {integrity: sha512-IrPdXQsk2BbzvCBGBOTmmSH5SodmqZNt4ERAZDmW4CT+tL8VtvinqywuANaFu4bOMWki16nqf0e4oC0QIaDr/g==}
-    engines: {node: '>=10'}
+  dotenv@16.4.7:
+    resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
+    engines: {node: '>=12'}
 
   drizzle-kit@0.30.0:
     resolution: {integrity: sha512-zAf0qg/BX2lV/Xip4igXrtbDv+Ub8S39U6qSOEGNvqcHrnmaQjS4mkkFZOUsgXRbuH56QUeWZxfnLHefrKCV5g==}
@@ -4522,17 +4520,17 @@ snapshots:
       '@babel/helper-string-parser': 7.25.9
       '@babel/helper-validator-identifier': 7.25.9
 
-  '@codeshare/env@git+https://git@github.com:codeshare/env.git#c6c2f6b7fa3702d585b0fde73ae15d3ab146a6a4':
+  '@codeshare/env@2.3.3':
     dependencies:
       baseerr: 1.0.4
-      dotenv: 8.6.0
+      dotenv: 16.4.7
       env-var: 6.3.0
       git-repo-info: 2.1.1
       parse-duration: 0.4.4
 
-  '@codeshare/log@https://codeload.github.com/codeshare/log/tar.gz/8ce163424a90c801604a1bb4b360aa6eef9de9c4':
+  '@codeshare/log@4.4.2':
     dependencies:
-      '@codeshare/env': git+https://git@github.com:codeshare/env.git#c6c2f6b7fa3702d585b0fde73ae15d3ab146a6a4
+      '@codeshare/env': 2.3.3
       '@google-cloud/logging-bunyan': 4.2.2(bunyan@1.8.15)
       baseerr: 1.0.4
       bunyan: 1.8.15
@@ -6049,7 +6047,7 @@ snapshots:
     dependencies:
       is-obj: 2.0.0
 
-  dotenv@8.6.0: {}
+  dotenv@16.4.7: {}
 
   drizzle-kit@0.30.0:
     dependencies:
