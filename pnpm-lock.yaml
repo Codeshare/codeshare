@@ -15,8 +15,8 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(@apollo/server@4.11.2(graphql@16.9.0))(next@15.1.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0))
       '@codeshare/log':
-        specifier: git+https://github.com/codeshare/log.git
-        version: https://codeload.github.com/codeshare/log/tar.gz/e52c8469dd9a6bcb96f22792276e8f1bcb89dc2f
+        specifier: git+https://github.com/codeshare/log.git#v4.2.0
+        version: https://codeload.github.com/codeshare/log/tar.gz/8ce163424a90c801604a1bb4b360aa6eef9de9c4
       '@radix-ui/react-label':
         specifier: ^2.1.1
         version: 2.1.1(@types/react-dom@19.0.0)(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -377,9 +377,9 @@ packages:
     resolution: {commit: c6c2f6b7fa3702d585b0fde73ae15d3ab146a6a4, repo: git@github.com:codeshare/env.git, type: git}
     version: 2.1.1
 
-  '@codeshare/log@https://codeload.github.com/codeshare/log/tar.gz/e52c8469dd9a6bcb96f22792276e8f1bcb89dc2f':
-    resolution: {tarball: https://codeload.github.com/codeshare/log/tar.gz/e52c8469dd9a6bcb96f22792276e8f1bcb89dc2f}
-    version: 4.1.5
+  '@codeshare/log@https://codeload.github.com/codeshare/log/tar.gz/8ce163424a90c801604a1bb4b360aa6eef9de9c4':
+    resolution: {tarball: https://codeload.github.com/codeshare/log/tar.gz/8ce163424a90c801604a1bb4b360aa6eef9de9c4}
+    version: 4.2.0
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -4530,7 +4530,7 @@ snapshots:
       git-repo-info: 2.1.1
       parse-duration: 0.4.4
 
-  '@codeshare/log@https://codeload.github.com/codeshare/log/tar.gz/e52c8469dd9a6bcb96f22792276e8f1bcb89dc2f':
+  '@codeshare/log@https://codeload.github.com/codeshare/log/tar.gz/8ce163424a90c801604a1bb4b360aa6eef9de9c4':
     dependencies:
       '@codeshare/env': git+https://git@github.com:codeshare/env.git#c6c2f6b7fa3702d585b0fde73ae15d3ab146a6a4
       '@google-cloud/logging-bunyan': 4.2.2(bunyan@1.8.15)
