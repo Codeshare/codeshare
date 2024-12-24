@@ -6,9 +6,10 @@ import {
   IsOptional,
   MaxLength,
 } from "class-validator"
-import { Field, InterfaceType, ObjectType } from "type-graphql"
+import { Field, ObjectType } from "type-graphql"
 
-import { planIds } from "./../../models/subscriptionPlans"
+import { planIds } from "@/lib/models/subscriptionPlansModel"
+
 import Connection from "./fields/Connection"
 import CreatedBy from "./fields/CreatedBy"
 import Edge from "./fields/Edge"

@@ -13,7 +13,7 @@ export interface HeadersType extends Record<string, string> {
 
 export default class CodeshareClient extends SimpleApiClient {
   constructor(defaultInit?: { headers?: HeadersType }) {
-    super(API_URL, (path, init) => {
+    super(API_URL, (_path, init) => {
       return {
         ...defaultInit,
         ...init,

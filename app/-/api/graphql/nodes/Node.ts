@@ -6,13 +6,14 @@ import { Field, ID, InterfaceType } from "type-graphql"
   resolveType: (value) => {
     logger.trace("VALUE", value)
     if (value?.typeName === "User")
-      return require("~/graphql/nodes/User").default
-    if (value?.typeName === "Me") return require("~/graphql/nodes/Me").default
+      return import("../nodes/User").then((m) => m.default)
+    if (value?.typeName === "Me")
+      return import("../nodes/Me").then((m) => m.default)
     if (value?.typeName === "Codeshare")
-      return require("~/graphql/nodes/Codeshare").default
+      return import("../nodes/Codeshare").then((m) => m.default)
   },
 })
-export default class xNode {
+export default class Node {
   @Field(() => ID)
   @IsDefined()
   @MaxLength(256)

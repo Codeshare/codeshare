@@ -1,4 +1,4 @@
-import { get } from "@codeshare/env"
+import { get } from "@/lib/common/env/env"
 
 const adminEmails = get("ADMIN_EMAILS").required().asJsonArray()
 

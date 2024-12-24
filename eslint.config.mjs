@@ -62,7 +62,7 @@ const eslintConfig = [
   },
   {
     // disable ALL rules for radix ui components
-    ignores: ["components/ui/*", "lib/utils.ts"],
+    ignores: ["components/ui/*", "lib/utils.ts", "**/resolvers/**"],
   },
 ]
 

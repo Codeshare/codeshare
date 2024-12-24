@@ -3,12 +3,11 @@ import { IncomingHttpHeaders, IncomingMessage } from "http"
 import Me from "@/app/-/api/graphql/nodes/Me"
 import { ContextFunction } from "@apollo/server"
 import logger from "@codeshare/log"
-import App from "next/app"
 import { AuthenticationError } from "type-graphql"
 
 import AppError from "@/lib/common/AppError"
 import sessionsModel from "@/lib/models/sessionsModel"
-import usersModel, { UserRow, UsersModel } from "@/lib/models/usersModel"
+import usersModel, { UserRow } from "@/lib/models/usersModel"
 
 export type ContextType = {
   xForwardedFor: string | undefined
@@ -25,8 +24,6 @@ export type ResolverContextType = {
   me: Me | null
   token: string
 }
-
-const DELIMETER = "_$$$_"
 
 function getClientIp(xForwardedFor: string): string | null {
   if (xForwardedFor == null) return null

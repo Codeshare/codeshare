@@ -2,20 +2,13 @@ import {
   IsDate,
   IsDefined,
   IsInt,
-  IsNumber,
   IsOptional,
   MaxLength,
 } from "class-validator"
 
 import "reflect-metadata"
 
-import {
-  createUnionType,
-  Field,
-  Int,
-  InterfaceType,
-  ObjectType,
-} from "type-graphql"
+import { Field, Int, ObjectType } from "type-graphql"
 
 import Connection from "./fields/Connection"
 import CreatedBy from "./fields/CreatedBy"

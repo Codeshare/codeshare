@@ -15,8 +15,8 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(@apollo/server@4.11.2(graphql@16.9.0))(next@15.1.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0))
       '@codeshare/log':
-        specifier: ^4.4.2
-        version: 4.4.2
+        specifier: ^5.1.1
+        version: 5.1.1
       '@radix-ui/react-label':
         specifier: ^2.1.1
         version: 2.1.1(@types/react-dom@19.0.0)(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -373,11 +373,8 @@ packages:
     resolution: {integrity: sha512-vN5p+1kl59GVKMvTHt55NzzmYVxprfJD+ql7U9NFIfKCBkYE55LYtS+WtPlaYOyzydrKI8Nezd+aZextrd+FMA==}
     engines: {node: '>=6.9.0'}
 
-  '@codeshare/env@2.3.3':
-    resolution: {integrity: sha512-x06mOxrXIqefvOKS9qFZ99gGvz/oz/up3nPeR+/wJl1Inct5LS2rkt4WyeSSadOGotyYeETrwvb9FceBA0sPLQ==, tarball: https://npm.pkg.github.com/download/@codeshare/env/2.3.3/9ad2c7b5ca9410ce31112698482c6c1010236023}
-
-  '@codeshare/log@4.4.2':
-    resolution: {integrity: sha512-b9D/DJBO2U5e7ItJ2V/vz4ofngEYqIErhEgmCXrzQH7tuMezxFGVCmjeL0fRaqZFeVCH4pMb4VdHgsHH54bkSw==, tarball: https://npm.pkg.github.com/download/@codeshare/log/4.4.2/3e8723abe6554351fbb90b57b4346e294b34e2f8}
+  '@codeshare/log@5.1.1':
+    resolution: {integrity: sha512-x6awZ5avfk7jegI8HXtnwii2DfqA2wd6ssWtCMcWr0/K5kZ9PnHh/8xCIy3lgzLHckGZg0L5T89vmZ0Ql1U6hA==, tarball: https://npm.pkg.github.com/download/@codeshare/log/5.1.1/3ae10a41cfe8d74c9ab4f1557707e2e2d6eb1b3c}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -1961,10 +1958,6 @@ packages:
     resolution: {integrity: sha512-tE7ztYzXHIeyvc7N+hR3oi7FIbf/NIjVP9hmAt3yMXzrQ072/fpjGLx2GxNxGxUl5V73MEqYzioOMoVhGMJ5cA==}
     engines: {node: '>=10'}
 
-  dotenv@16.4.7:
-    resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
-    engines: {node: '>=12'}
-
   drizzle-kit@0.30.0:
     resolution: {integrity: sha512-zAf0qg/BX2lV/Xip4igXrtbDv+Ub8S39U6qSOEGNvqcHrnmaQjS4mkkFZOUsgXRbuH56QUeWZxfnLHefrKCV5g==}
     hasBin: true
@@ -2121,10 +2114,6 @@ packages:
   entities@4.5.0:
     resolution: {integrity: sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==}
     engines: {node: '>=0.12'}
-
-  env-var@6.3.0:
-    resolution: {integrity: sha512-gaNzDZuVaJQJlP2SigAZLu/FieZN5MzdN7lgHNehESwlRanHwGQ/WUtJ7q//dhrj3aGBZM45yEaKOuvSJaf4mA==}
-    engines: {node: '>=8'}
 
   env-var@7.5.0:
     resolution: {integrity: sha512-mKZOzLRN0ETzau2W2QXefbFjo5EF4yWq28OyKb9ICdeNhHJlOE/pHHnz4hdYJ9cNZXcJHo5xN4OT4pzuSHSNvA==}
@@ -2556,10 +2545,6 @@ packages:
 
   get-tsconfig@4.8.1:
     resolution: {integrity: sha512-k9PN+cFBmaLWtVz29SkUoqU5O0slLuHJXt/2P+tMVFT+phsSGXGkp9t3rQIqdz0e+06EHNGs3oM6ZX1s2zHxRg==}
-
-  git-repo-info@2.1.1:
-    resolution: {integrity: sha512-8aCohiDo4jwjOwma4FmYFd3i97urZulL8XL24nIPxuE+GZnfsAyy/g2Shqx6OjUiFKUXZM+Yy+KHnOmmA3FVcg==}
-    engines: {node: '>= 4.0'}
 
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
@@ -3401,9 +3386,6 @@ packages:
   parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
     engines: {node: '>=6'}
-
-  parse-duration@0.4.4:
-    resolution: {integrity: sha512-KbAJuYGUhZkB9gotDiKLnZ7Z3VTacK3fgwmDdB6ZVDtJbMBT6MfLga0WJaYpPDu0mzqT0NgHtHDt5PY4l0nidg==}
 
   parse-duration@1.1.1:
     resolution: {integrity: sha512-27m0hKqcGzYFGtrZ1FPSNuAUi1mvqYIUjHHIgYYAc+4wcj7t2o7Qj3X4s7THMOYyeTcFjmKUZu0yJG2oE947bw==}
@@ -4520,20 +4502,12 @@ snapshots:
       '@babel/helper-string-parser': 7.25.9
       '@babel/helper-validator-identifier': 7.25.9
 
-  '@codeshare/env@2.3.3':
+  '@codeshare/log@5.1.1':
     dependencies:
-      baseerr: 1.0.4
-      dotenv: 16.4.7
-      env-var: 6.3.0
-      git-repo-info: 2.1.1
-      parse-duration: 0.4.4
-
-  '@codeshare/log@4.4.2':
-    dependencies:
-      '@codeshare/env': 2.3.3
       '@google-cloud/logging-bunyan': 4.2.2(bunyan@1.8.15)
       baseerr: 1.0.4
       bunyan: 1.8.15
+      env-var: 7.5.0
       error-to-json: 2.0.0
       request-to-json: 2.0.2
       spark-to-json: 2.0.0
@@ -6047,8 +6021,6 @@ snapshots:
     dependencies:
       is-obj: 2.0.0
 
-  dotenv@16.4.7: {}
-
   drizzle-kit@0.30.0:
     dependencies:
       '@drizzle-team/brocli': 0.10.2
@@ -6127,8 +6099,6 @@ snapshots:
       safe-regex-test: 1.1.0
 
   entities@4.5.0: {}
-
-  env-var@6.3.0: {}
 
   env-var@7.5.0: {}
 
@@ -6819,8 +6789,6 @@ snapshots:
   get-tsconfig@4.8.1:
     dependencies:
       resolve-pkg-maps: 1.0.0
-
-  git-repo-info@2.1.1: {}
 
   glob-parent@5.1.2:
     dependencies:
@@ -7675,8 +7643,6 @@ snapshots:
   parent-module@1.0.1:
     dependencies:
       callsites: 3.1.0
-
-  parse-duration@0.4.4: {}
 
   parse-duration@1.1.1: {}
 
