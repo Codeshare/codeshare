@@ -1,6 +1,6 @@
 import "reflect-metadata"
 
-import User from "@/app/-/api/graphql/nodes/nodes/User"
+import User from "@/app/-/api/graphql/nodes/User"
 import { Field, ObjectType } from "type-graphql"
 
 @ObjectType({ description: "Modified by user" })

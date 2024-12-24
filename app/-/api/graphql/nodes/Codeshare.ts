@@ -13,7 +13,7 @@ import { Field, ID, InputType, ObjectType } from "type-graphql"
 import {
   CodeHistoryConnection,
   CodeHistoryEdge,
-  TextOperationType,
+  type TextOperationType,
 } from "./CodeHistory"
 import CreatedBy from "./fields/CreatedBy"
 import ModifiedBy from "./fields/ModifiedBy"

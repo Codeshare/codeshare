@@ -22,10 +22,14 @@ function asDurationString(
   try {
     ret = accessors.asString(value)
   } catch (err) {
-    throw AsDurationStringError.wrap(err, `${value} must be a string`, {
-      value,
-      units,
-    })
+    throw AsDurationStringError.wrap<AsDurationStringErrorProps>(
+      err,
+      `${value} must be a string`,
+      {
+        value,
+        units,
+      },
+    )
   }
 
   const re = new RegExp(`^\\d+\\s*${units.join("|")}$`)

@@ -6,6 +6,7 @@ import {
   Selection,
   sql,
 } from "kysely"
+import { v4 } from "uuid"
 
 import pg, { CodeshareDB } from "@/lib/clients/postgres/postgres"
 import PostgresModel, {
@@ -15,6 +16,49 @@ import PostgresModel, {
 } from "@/lib/clients/postgres/PostgresModel"
 import UserSchema from "@/lib/clients/postgres/schemas/user"
 import ExactOmit from "@/lib/typeHelpers/ExactOmit"
+
+// TODO: figure out all this anon users stuff
+
+const ANON_NAMESPACE = "anon:"
+
+export interface AnonUserRow {
+  id: string
+  anonymous: true
+  createdAt: Date
+  cleanedAt?: Date
+  loginCount: number
+  modifiedAt: Date
+  modifiedBy: {
+    userId: string
+    clientId: string
+  }
+  settings?: {
+    keymap: string
+    theme: string
+  }
+}
+export function isAnonId(id: string): boolean {
+  return id.startsWith(ANON_NAMESPACE)
+}
+export function prependAnonNamespace(id: string): string {
+  if (isAnonId(id)) return id
+  return ANON_NAMESPACE + id
+}
+
+export const anonUser = (id?: string): AnonUserRow => {
+  const anonUserId = id || prependAnonNamespace(v4())
+  return {
+    id: anonUserId,
+    anonymous: true,
+    createdAt: new Date(),
+    loginCount: 0,
+    modifiedAt: new Date(),
+    modifiedBy: {
+      userId: anonUserId,
+      clientId: "client-id",
+    },
+  }
+}
 
 export class UsersModelError<
   Props extends PostgresModelErrorProps,

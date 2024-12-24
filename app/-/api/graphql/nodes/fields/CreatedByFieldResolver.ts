@@ -1,6 +1,7 @@
-import { ResolverContextType } from "@/app/-/api/graphql/nodes/getContext"
-import User from "~/graphql/nodes/User"
-import { anonUser, UserRow, usersModel } from "~/models/users"
+import User from "@/app/-/api/graphql/nodes/User"
+import { type ResolverContextType } from "@/app/-/api/graphql/resolvers/getContext"
+
+import usersModel, { anonUser, UserRow } from "@/lib/models/usersModel"
 
 import "reflect-metadata"
 
@@ -17,6 +18,8 @@ export default class CreatedByFieldResolver {
   @FieldResolver(() => User)
   async user(@Root() createdBy: CreatedBy): Promise<UserRow> {
     const user = await usersModel.getOne("id", createdBy.userId)
-    return user ?? anonUser(createdBy.userId)
+
+    // HACK: fix me later
+    return (user ?? anonUser(createdBy.userId)) as UserRow
   }
 }

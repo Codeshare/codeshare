@@ -3,8 +3,8 @@ import { Ratelimit as UpstashRatelimit } from "@upstash/ratelimit"
 import { redisClient as redis } from "@/lib/clients/redis/redis"
 import { get } from "@/lib/common/env/env"
 
-get("KV_REST_API_URL").required().asUrlString()
-get("KV_REST_API_TOKEN").required().asString()
+get("REDIS_KV_REST_API_URL").required().asUrlString()
+get("REDIS_KV_REST_API_TOKEN").required().asString()
 
 const RATELIMIT_LIMIT = get("RATELIMIT_LIMIT").default("30").asIntPositive()
 const RATELIMIT_DURATION = get("RATELIMIT_DURATION")

@@ -5,5 +5,6 @@ import { LoggerType as BrowserLoggerType } from "./logger.browser"
 export type LoggerType = BrowserLoggerType
 
 export default IS_BROWSER
-  ? import("./logger.browser").then((m) => m.default)
-  : import("./logger.server").then((m) => m.default)
+  ? await import("./logger.browser").then((m) => m.default)
+  : // HACK: fix me later (to server)
+    await import("./logger.browser").then((m) => m.default)

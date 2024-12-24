@@ -1,6 +1,5 @@
 import { ApolloServer } from "@apollo/server"
 import { startServerAndCreateNextHandler } from "@as-integrations/next"
-import { NextApiRequest, NextApiResponse } from "next"
 import { buildSchema, Query, Resolver } from "type-graphql"
 
 import getContext from "./resolvers/getContext"
@@ -29,13 +28,14 @@ const server = new ApolloServer<Context>({
   schema,
 })
 
-const handler = startServerAndCreateNextHandler<NextApiRequest, Context>(
-  server,
-  {
-    context: async (req: NextApiRequest, _res: NextApiResponse) => {
-      return getContext({ req })
-    },
-  },
-)
+const handler = startServerAndCreateNextHandler(server, {
+  context: async (req, _res) => getContext({ req }),
+})
 
-export { handler as GET, handler as POST }
+export async function GET(request: Request) {
+  return handler(request, undefined)
+}
+
+export async function POST(request: Request) {
+  return handler(request, undefined)
+}
