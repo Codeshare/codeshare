@@ -5,6 +5,7 @@ import wrapper from "ts-wrappers"
 
 import { IS_BROWSER } from "../../const/const"
 import AppError, { AppErrorProps } from "../AppError"
+import logger from "../logger"
 import asDuration from "./asDuration"
 import asDurationString from "./asDurationString"
 import asTemplateString from "./asTemplateString"
@@ -56,12 +57,11 @@ export const get = wrapper((getEnv: GetEnv, ...args: Parameters<GetEnv>) => {
   return ret
 })(envInstance.get as GetEnv)
 
+logger.debug("ENV:")
 if (IS_BROWSER) {
-  console.log(window?.process)
-  console.log(window?.process?.env)
+  logger.debug(window?.process?.env)
 } else {
-  console.log(process)
-  console.log(process?.env)
+  logger.debug(process?.env)
 }
 
 export const publicEnv = {
