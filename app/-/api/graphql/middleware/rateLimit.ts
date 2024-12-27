@@ -2,7 +2,7 @@ import { ResolverContextType } from "@/app/-/api/graphql/resolvers/getContext"
 import { MiddlewareFn } from "type-graphql"
 
 import AppError from "@/lib/common/AppError"
-import { Ratelimit, RatelimitConfig } from "@/lib/models/rateLimitModel"
+import { Ratelimit, RatelimitConfig } from "@/lib/services/rateLimit"
 
 class RateLimitError extends AppError<{
   code: string

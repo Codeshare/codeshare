@@ -6,6 +6,7 @@ import { get } from "@/lib/common/env/env"
 get("REDIS_KV_REST_API_URL").required().asUrlString()
 get("REDIS_KV_REST_API_TOKEN").required().asString()
 
+const REDIS_API_NAMESPACE = get("REDIS_API_NAMESPACE").required().asString()
 const RATELIMIT_LIMIT = get("RATELIMIT_LIMIT").default("30").asIntPositive()
 const RATELIMIT_DURATION = get("RATELIMIT_DURATION")
   .default("60s")
@@ -86,7 +87,7 @@ export class Ratelimit {
     if (process.env.NODE_ENV == "development") return this.noLimit()
 
     return this.ratelimit.limit(
-      `codeshare:api:ratelimit:${userId ?? ip}:${key}`,
+      `${REDIS_API_NAMESPACE}:ratelimit:${userId ?? ip}:${key}`,
     )
   }
 }

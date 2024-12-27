@@ -5,7 +5,7 @@ import { Redis, redisClient as redis } from "@/lib/clients/redis/redis"
 import AppError, { AppErrorProps, ErrorShape } from "@/lib/common/AppError"
 import ExactOmit from "@/lib/typeHelpers/ExactOmit"
 
-const REDIS_NAMESPACE = get("REDIS_NAMESPACE").required().asString()
+const REDIS_API_NAMESPACE = get("REDIS_API_NAMESPACE").required().asString()
 
 type RedisModelRecord = { expiresAt: Date }
 type Index<ModelRecord> = keyof Omit<ModelRecord, "expiresAt">
@@ -37,7 +37,7 @@ export default class RedisModel<ModelRecord extends RedisModelRecord> {
 
   // utils
   key(id: string) {
-    return `${REDIS_NAMESPACE}:models:${this.tableName}:${id}`
+    return `${REDIS_API_NAMESPACE}:models:${this.tableName}:${id}`
   }
 
   parse(data: string): ModelRecord {
